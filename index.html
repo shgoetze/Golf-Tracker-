@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⛳ FAIRWAY LAB v3</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#050505;--bg2:#0d0d0d;--bg3:#111;
+  --green:#39ff14;--yellow:#ffe600;--red:#ff3030;--orange:#ff8c00;--blue:#00cfff;
+  --dim:#2a2a2a;--dim2:#1a1a1a;--text:#c8c8c8;--text-dim:#555;
+  --font-px:'Press Start 2P',monospace;--font-mono:'DM Mono','Courier New',monospace;
+  --glow-g:0 0 8px var(--green),0 0 22px rgba(57,255,20,.25);
+  --glow-y:0 0 8px var(--yellow),0 0 22px rgba(255,230,0,.25);
+  --glow-r:0 0 8px var(--red),0 0 18px rgba(255,48,48,.25);
+}
+html{font-size:14px}
+body{background:var(--bg);color:var(--text);font-family:var(--font-mono);min-height:100vh;position:relative;overflow-x:hidden}
+
+/* SCANLINES */
+body::before{
+content:’’;position:fixed;inset:0;pointer-events:none;z-index:9999;
+background:repeating-linear-gradient(0deg,transparent 0,transparent 2px,rgba(0,0,0,.13) 2px,rgba(0,0,0,.13) 4px);
+}
+/* CRT VIGNETTE */
+body::after{
+content:’’;position:fixed;inset:0;pointer-events:none;z-index:9998;
+background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.72) 100%);
+}
+
+#app{max-width:880px;margin:0 auto;padding:0 12px 70px}
+
+/* HEADER */
+header{
+padding:26px 0 14px;text-align:center;
+border-bottom:2px solid var(–green);margin-bottom:0;position:relative;
+}
+header .glow-line{height:2px;background:linear-gradient(90deg,transparent,var(–green),transparent);margin-top:4px;filter:blur(2px)}
+.h-title{font-family:var(–font-px);font-size:clamp(14px,4vw,26px);color:var(–green);
+text-shadow:var(–glow-g);letter-spacing:4px;animation:flicker 5s infinite}
+.h-sub{font-size:9px;color:var(–text-dim);letter-spacing:3px;margin-top:7px}
+.cursor::after{content:’_’;animation:blink 1s step-end infinite}
+
+/* TABS */
+.tabs{display:flex;background:var(–bg2);border:2px solid var(–dim);border-top:none;margin-bottom:20px}
+.tab-btn{
+flex:1;padding:11px 4px;font-family:var(–font-px);font-size:clamp(5px,1.4vw,8px);
+background:none;border:none;color:var(–text-dim);cursor:pointer;
+border-right:1px solid var(–dim);transition:all .15s;letter-spacing:1px;position:relative
+}
+.tab-btn:last-child{border-right:none}
+.tab-btn:hover{color:var(–green);background:rgba(57,255,20,.04)}
+.tab-btn.active{color:var(–green);background:rgba(57,255,20,.07);text-shadow:0 0 8px var(–green)}
+.tab-btn.active::after{content:’’;position:absolute;bottom:0;left:0;right:0;height:2px;background:var(–green);box-shadow:0 0 6px var(–green)}
+
+/* GAME CARDS */
+.games-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.game-card{
+background:var(–bg2);border:2px solid var(–dim);padding:16px;
+cursor:pointer;transition:border-color .15s,box-shadow .15s;position:relative
+}
+.game-card:hover{border-color:var(–green);box-shadow:var(–glow-g),inset 0 0 30px rgba(57,255,20,.025)}
+/* pixel corner marks */
+.game-card::before{content:’’;position:absolute;top:-1px;left:-1px;width:9px;height:9px;border-top:2px solid var(–green);border-left:2px solid var(–green)}
+.game-card::after{content:’’;position:absolute;bottom:-1px;right:-1px;width:9px;height:9px;border-bottom:2px solid var(–green);border-right:2px solid var(–green)}
+.card-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.card-emoji{font-size:22px;line-height:1}
+.card-name{font-family:var(–font-px);font-size:clamp(6px,1.5vw,7px);color:var(–green);line-height:1.7}
+.card-desc{font-size:10px;color:var(–text-dim);margin-bottom:12px;line-height:1.6}
+.card-avg-label{font-size:8px;color:var(–text-dim);margin-bottom:4px}
+.card-avg-val{font-family:var(–font-px);font-size:13px;color:var(–yellow);text-shadow:0 0 6px var(–yellow)}
+.avg-bar{height:5px;background:var(–dim);margin-top:5px;margin-bottom:12px}
+.avg-bar-fill{height:100%;background:var(–green);box-shadow:0 0 5px var(–green);transition:width .5s}
+.card-btns{display:flex;gap:8px}
+
+/* BUTTONS */
+.btn{padding:7px 11px;font-family:var(–font-px);font-size:6px;border:2px solid;cursor:pointer;background:none;letter-spacing:1px;transition:all .1s;line-height:1}
+.btn-primary{border-color:var(–green);color:var(–green)}
+.btn-primary:hover{background:var(–green);color:var(–bg);box-shadow:var(–glow-g)}
+.btn-secondary{border-color:var(–dim);color:var(–text-dim)}
+.btn-secondary:hover{border-color:var(–yellow);color:var(–yellow)}
+.btn-danger{border-color:var(–red);color:var(–red);font-size:6px;padding:5px 8px}
+.btn-danger:hover{background:var(–red);color:var(–bg)}
+
+/* MODAL */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:1000;align-items:center;justify-content:center;padding:12px}
+.modal-ov.open{display:flex}
+.modal-box{
+background:var(–bg2);border:2px solid var(–green);box-shadow:var(–glow-g);
+width:100%;max-width:560px;max-height:90vh;overflow-y:auto;
+animation:modal-in .14s ease-out
+}
+@keyframes modal-in{from{transform:scale(.96);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-titlebar{
+background:var(–bg3);padding:12px 16px;display:flex;align-items:center;
+justify-content:space-between;border-bottom:2px solid var(–green)
+}
+.modal-gtitle{font-family:var(–font-px);font-size:9px;color:var(–green);display:flex;align-items:center;gap:10px}
+.modal-close{background:none;border:2px solid var(–red);color:var(–red);font-family:var(–font-px);font-size:7px;padding:5px 8px;cursor:pointer}
+.modal-close:hover{background:var(–red);color:var(–bg)}
+.modal-stabs{display:flex;border-bottom:2px solid var(–dim)}
+.modal-stab{flex:1;padding:9px;font-family:var(–font-px);font-size:6px;background:none;border:none;color:var(–text-dim);cursor:pointer;border-right:1px solid var(–dim);transition:all .12s}
+.modal-stab:last-child{border-right:none}
+.modal-stab.active{color:var(–yellow);background:rgba(255,230,0,.05);text-shadow:0 0 6px var(–yellow)}
+.modal-body{padding:18px}
+
+/* RULES */
+.rules-sec{margin-bottom:16px}
+.rules-ttl{font-family:var(–font-px);font-size:7px;color:var(–yellow);margin-bottom:9px;border-left:3px solid var(–yellow);padding-left:8px}
+.rules-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:10px;gap:8px}
+.rules-row span:first-child{flex:1}
+.rpts{font-family:var(–font-px);font-size:8px;color:var(–green);white-space:nowrap}
+.rpts.neg{color:var(–red)}
+.rules-note{font-size:10px;line-height:1.7;color:var(–text-dim);padding:10px;background:rgba(255,230,0,.04);border:1px solid rgba(255,230,0,.15);margin-top:8px}
+
+/* LOG FORM */
+.log-form .field{margin-bottom:14px}
+.log-form label{display:block;font-family:var(–font-px);font-size:6px;color:var(–yellow);margin-bottom:6px}
+.log-form input,.log-form textarea{
+width:100%;background:var(–bg);border:2px solid var(–dim);color:var(–text);
+font-family:var(–font-mono);font-size:13px;padding:9px;outline:none;
+transition:border-color .12s,box-shadow .12s
+}
+.log-form input:focus,.log-form textarea:focus{border-color:var(–green);box-shadow:0 0 8px rgba(57,255,20,.25)}
+.log-form textarea{height:72px;resize:vertical}
+.bm-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;padding:10px;background:var(–bg);border:1px solid var(–dim)}
+.bm-chip{font-family:var(–font-px);font-size:6px;padding:3px 7px;border:1px solid}
+.bm-work{color:var(–red);border-color:var(–red)}
+.bm-ok{color:var(–orange);border-color:var(–orange)}
+.bm-solid{color:var(–yellow);border-color:var(–yellow)}
+.bm-excellent{color:var(–green);border-color:var(–green)}
+.btn-save{
+width:100%;padding:13px;font-family:var(–font-px);font-size:9px;
+background:var(–green);color:var(–bg);border:none;cursor:pointer;letter-spacing:2px;transition:all .1s
+}
+.btn-save:hover{box-shadow:var(–glow-g);filter:brightness(1.1)}
+.err-msg{color:var(–red);font-family:var(–font-px);font-size:7px;margin-top:10px;text-align:center;min-height:16px}
+
+/* PROGRESS */
+.filter-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px}
+.filter-btn{padding:6px 11px;font-family:var(–font-px);font-size:6px;background:none;border:2px solid var(–dim);color:var(–text-dim);cursor:pointer;transition:all .12s}
+.filter-btn:hover{border-color:var(–green);color:var(–green)}
+.filter-btn.active{border-color:var(–yellow);color:var(–yellow);background:rgba(255,230,0,.05)}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.stat-box{background:var(–bg2);border:2px solid var(–dim);padding:13px 8px;text-align:center;position:relative}
+.stat-box::before{content:’’;position:absolute;top:-1px;left:-1px;width:6px;height:6px;border-top:2px solid var(–dim);border-left:2px solid var(–dim)}
+.stat-val{font-family:var(–font-px);font-size:15px;color:var(–green);text-shadow:0 0 10px var(–green);margin-bottom:5px}
+.stat-lbl{font-family:var(–font-px);font-size:5px;color:var(–text-dim);line-height:1.8}
+.chart-wrap{background:var(–bg2);border:2px solid var(–dim);padding:14px;margin-bottom:22px}
+.chart-ttl{font-family:var(–font-px);font-size:7px;color:var(–text-dim);margin-bottom:12px}
+#chart-svg{width:100%;display:block}
+.slog-ttl{font-family:var(–font-px);font-size:7px;color:var(–text-dim);margin-bottom:12px;border-bottom:1px solid var(–dim);padding-bottom:8px}
+.sitem{
+background:var(–bg2);border:1px solid var(–dim);border-left:3px solid var(–dim2);
+padding:11px 12px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px
+}
+.sitem.grade-excellent{border-left-color:var(–green)}
+.sitem.grade-solid{border-left-color:var(–yellow)}
+.sitem.grade-ok{border-left-color:var(–orange)}
+.sitem.grade-work{border-left-color:var(–red)}
+.sitem-emoji{font-size:20px;flex-shrink:0;line-height:1}
+.sitem-info{flex:1;min-width:0}
+.sitem-name{font-family:var(–font-px);font-size:7px;color:var(–text);margin-bottom:3px}
+.sitem-date{font-size:9px;color:var(–text-dim);margin-bottom:3px}
+.sitem-sub{font-size:9px;color:#777;margin-bottom:2px}
+.sitem-notes{font-size:9px;color:#666;font-style:italic}
+.sitem-right{text-align:right;flex-shrink:0}
+.sitem-score{font-family:var(–font-px);font-size:12px;color:var(–green)}
+.sitem-pct{font-size:9px;color:var(–text-dim);margin-bottom:4px}
+.grade-badge{font-family:var(–font-px);font-size:6px;padding:2px 5px;border:1px solid;display:inline-block;margin-bottom:5px}
+.grade-badge.grade-excellent{color:var(–green);border-color:var(–green)}
+.grade-badge.grade-solid{color:var(–yellow);border-color:var(–yellow)}
+.grade-badge.grade-ok{color:var(–orange);border-color:var(–orange)}
+.grade-badge.grade-work{color:var(–red);border-color:var(–red)}
+.no-data{text-align:center;padding:44px 20px;font-family:var(–font-px);font-size:7px;color:var(–text-dim);line-height:2.4}
+
+/* PLANNER */
+.plan-hdr{font-family:var(–font-px);font-size:9px;color:var(–green);margin-bottom:10px}
+.slot-picker{display:flex;gap:10px;margin-bottom:22px}
+.slot-btn{flex:1;padding:13px;font-family:var(–font-px);font-size:11px;background:none;border:2px solid var(–dim);color:var(–text-dim);cursor:pointer;transition:all .15s}
+.slot-btn.active{border-color:var(–green);color:var(–green);box-shadow:0 0 12px rgba(57,255,20,.18)}
+.rot-box{background:var(–bg2);border:2px solid var(–green);padding:20px;margin-bottom:14px;box-shadow:0 0 16px rgba(57,255,20,.08)}
+.rot-ttl{font-family:var(–font-px);font-size:7px;color:var(–yellow);margin-bottom:14px}
+.rot-games{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
+.rot-game-row{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(–bg);border:1px solid var(–dim)}
+.rot-num{font-family:var(–font-px);font-size:8px;color:var(–text-dim);width:22px;flex-shrink:0}
+.rot-gname{font-family:var(–font-px);font-size:7px;color:var(–green);flex:1}
+.rot-meta{font-size:9px;color:var(–text-dim)}
+.rot-rationale{font-size:10px;color:var(–text-dim);border-left:2px solid var(–yellow);padding-left:10px;line-height:1.7;margin-bottom:16px}
+.btn-gen{
+width:100%;padding:13px;font-family:var(–font-px);font-size:8px;
+background:none;border:2px solid var(–yellow);color:var(–yellow);cursor:pointer;letter-spacing:2px;transition:all .12s
+}
+.btn-gen:hover{background:rgba(255,230,0,.08);box-shadow:var(–glow-y)}
+.plan-note{margin-top:18px;padding:14px;background:var(–bg2);border:1px solid var(–dim);font-size:10px;line-height:1.8;color:var(–text-dim)}
+.plan-note-ttl{font-family:var(–font-px);font-size:7px;color:var(–yellow);margin-bottom:8px}
+
+/* FRAMEWORK */
+.fw-sec{background:var(–bg2);border:2px solid var(–dim);padding:16px;margin-bottom:14px;position:relative}
+.fw-sec::before{content:’’;position:absolute;top:-1px;left:-1px;width:8px;height:8px;border-top:2px solid var(–yellow);border-left:2px solid var(–yellow)}
+.fw-ttl{font-family:var(–font-px);font-size:8px;color:var(–yellow);margin-bottom:14px;letter-spacing:1px}
+.fw-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:10px;gap:8px}
+.fw-freq{font-family:var(–font-px);font-size:7px;color:var(–green);white-space:nowrap}
+.fw-note{font-size:9px;color:var(–text-dim);margin-top:10px;line-height:1.7}
+.prin-item{padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:10px;line-height:1.6}
+.prin-lbl{font-family:var(–font-px);font-size:7px;color:var(–green);margin-bottom:4px}
+.step-item{display:flex;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:10px;line-height:1.6}
+.step-num{font-family:var(–font-px);font-size:10px;color:var(–yellow);flex-shrink:0;width:24px}
+.day-row{display:flex;gap:10px;padding:6px 0;font-size:10px;border-bottom:1px solid rgba(255,255,255,.03);line-height:1.5}
+.day-lbl{font-family:var(–font-px);font-size:6px;color:var(–yellow);width:30px;flex-shrink:0;line-height:2.2}
+
+/* CONFIRM */
+.confirm-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:1100;align-items:center;justify-content:center}
+.confirm-ov.open{display:flex}
+.confirm-box{background:var(–bg2);border:2px solid var(–red);box-shadow:var(–glow-r);padding:26px;max-width:340px;width:90%;text-align:center}
+.confirm-ttl{font-family:var(–font-px);font-size:9px;color:var(–red);margin-bottom:12px}
+.confirm-txt{font-size:11px;color:var(–text-dim);margin-bottom:20px;line-height:1.7}
+.confirm-btns{display:flex;gap:10px}
+.confirm-btns .btn{flex:1;padding:11px;font-size:7px}
+
+/* TOAST */
+.toast{
+position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(90px);
+background:var(–bg2);border:2px solid var(–green);box-shadow:var(–glow-g);
+padding:11px 22px;font-family:var(–font-px);font-size:8px;color:var(–green);
+z-index:2000;transition:transform .28s cubic-bezier(.34,1.56,.64,1);white-space:nowrap
+}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ANIMS */
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes flicker{0%,93%,100%{opacity:1}94%{opacity:.75}95%{opacity:1}97%{opacity:.88}}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(–bg2)}::-webkit-scrollbar-thumb{background:var(–dim)}
+
+@media(max-width:600px){
+.stats-row{grid-template-columns:repeat(2,1fr)}
+.games-grid{grid-template-columns:1fr}
+}
+</style>
+
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="h-title">⛳ FAIRWAY LAB</div>
+    <div class="h-sub">GOLF PRACTICE TRACKER v3.0 &nbsp;<span class="cursor"></span></div>
+    <div class="glow-line"></div>
+  </header>
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="games"     onclick="switchTab('games')">MINI GAMES</button>
+    <button class="tab-btn"        data-tab="progress"  onclick="switchTab('progress')">PROGRESS</button>
+    <button class="tab-btn"        data-tab="planner"   onclick="switchTab('planner')">PLANNER</button>
+    <button class="tab-btn"        data-tab="framework" onclick="switchTab('framework')">FRAMEWORK</button>
+  </nav>
+  <div id="content"></div>
+</div>
+
+<!-- GAME MODAL -->
+
+<div class="modal-ov" id="modal">
+  <div class="modal-box">
+    <div class="modal-titlebar">
+      <div class="modal-gtitle" id="modal-gtitle">GAME</div>
+      <button class="modal-close" onclick="closeModal()">✕ CLOSE</button>
+    </div>
+    <div class="modal-stabs">
+      <button class="modal-stab active" id="stab-rules" onclick="switchModalTab('rules')">RULES & SCORING</button>
+      <button class="modal-stab" id="stab-log" onclick="switchModalTab('log')">► LOG SESSION</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+
+<div class="confirm-ov" id="confirm-modal">
+  <div class="confirm-box">
+    <div class="confirm-ttl">⚠ DELETE SESSION?</div>
+    <div class="confirm-txt">This action cannot be undone.<br>Remove this session from the log?</div>
+    <div class="confirm-btns">
+      <button class="btn btn-secondary" onclick="closeConfirm()">CANCEL</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">DELETE</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===================================================
+   GAME CONFIG
+=================================================== */
+const GAMES = {
+  'fairway-finder':{
+    name:'FAIRWAY FINDER',emoji:'🏌️',desc:'DRIVING — 20 drives, hit the corridor',max:100,
+    benchmarks:{work:45,solid:65,excellent:80},subStats:[]
+  },
+  'strike-lab':{
+    name:'STRIKE LAB',emoji:'⛳',desc:'IRONS — 15 shots, pure strikes',max:75,
+    benchmarks:{work:35,solid:50,excellent:63},subStats:[]
+  },
+  'dead-yardage':{
+    name:'DEAD YARDAGE',emoji:'🎯',desc:'WEDGES — 15 shots to 3 yardages',max:75,
+    benchmarks:{work:35,solid:50,excellent:63},
+    subStats:[{key:'yardages',label:'YARDAGES USED',type:'text',placeholder:'e.g. 50, 75, 100 yds'}]
+  },
+  'putting':{
+    name:'3-RANGE PUTTING',emoji:'🕳️',desc:'PUTTING — Long/mid/short + mandatory 3-footer',max:70,
+    benchmarks:{work:32,solid:47,excellent:60},
+    subStats:[
+      {key:'shortMakes',label:'SHORT MAKES (of 6)',type:'number',min:0,max:6},
+      {key:'mediumMakes',label:'MEDIUM MAKES (of 5)',type:'number',min:0,max:5}
+    ]
+  },
+  'up-done':{
+    name:'UP & DONE',emoji:'🏖️',desc:'CHIPPING — 8 chip-then-putt holes',max:48,
+    benchmarks:{work:20,solid:30,excellent:40},
+    subStats:[{key:'upAndDowns',label:'UP & DOWNS MADE (of 8)',type:'number',min:0,max:8}]
+  }
+};
+const GAME_IDS = Object.keys(GAMES);
+
+/* ===================================================
+   RULES HTML
+=================================================== */
+const RULES_HTML = {
+  'fairway-finder':`
+    <div class="rules-sec">
+      <div class="rules-ttl">20 DRIVES — MAX 100 PTS</div>
+      <div class="rules-row"><span>Dead center (within 10 yds of center line)</span><span class="rpts">5 pts</span></div>
+      <div class="rules-row"><span>Fairway corridor (inside the cones)</span><span class="rpts">3 pts</span></div>
+      <div class="rules-row"><span>Slight miss (edge of rough)</span><span class="rpts">1 pt</span></div>
+      <div class="rules-row"><span>Clear miss</span><span class="rpts">0 pts</span></div>
+      <div class="rules-row"><span>OB simulated (beyond far rough marker)</span><span class="rpts neg">−2 pts</span></div>
+    </div>
+    <div class="rules-sec">
+      <div class="rules-ttl">SETUP</div>
+      <div class="rules-note">Use cones or range targets to define a fairway corridor (~30 yds wide). Dead center = within 10 yds of center line. OB = beyond extreme left/right marker. Hit all 20 drives in sequence, no re-hits.</div>
+    </div>`,
+  'strike-lab':`
+    <div class="rules-sec">
+      <div class="rules-ttl">15 IRON SHOTS — MAX 75 PTS</div>
+      <div class="rules-row"><span>Pure strike + ball finishes inside 15 yds of target</span><span class="rpts">5 pts</span></div>
+      <div class="rules-row"><span>Pure strike, ball finishes outside target circle</span><span class="rpts">3 pts</span></div>
+      <div class="rules-row"><span>Thin or fat strike, but lands on target</span><span class="rpts">2 pts</span></div>
+      <div class="rules-row"><span>Poor strike + misses target</span><span class="rpts">0 pts</span></div>
+    </div>
+    <div class="rules-sec">
+      <div class="rules-ttl">SETUP</div>
+      <div class="rules-note">Pick a target at your normal iron distance. Use alignment sticks or towels to define a 15-yd radius circle. Pure strike = ball-first contact with compression through impact, clean divot after ball position.</div>
+    </div>`,
+  'dead-yardage':`
+    <div class="rules-sec">
+      <div class="rules-ttl">15 SHOTS — 5 PER YARDAGE — MAX 75 PTS</div>
+      <div class="rules-row"><span>Finishes inside 5 ft of target</span><span class="rpts">5 pts</span></div>
+      <div class="rules-row"><span>Finishes 5–10 ft from target</span><span class="rpts">4 pts</span></div>
+      <div class="rules-row"><span>Finishes 10–20 ft from target</span><span class="rpts">3 pts</span></div>
+      <div class="rules-row"><span>Finishes 20–30 ft from target</span><span class="rpts">2 pts</span></div>
+      <div class="rules-row"><span>Outside 30 ft</span><span class="rpts">0 pts</span></div>
+    </div>
+    <div class="rules-sec">
+      <div class="rules-ttl">SETUP</div>
+      <div class="rules-note">Choose 3 yardages covering your scoring zone (e.g. 50, 75, 100 yds). Hit 5 shots at each. Log the yardages used — consistency of target selection is part of the drill. Rotate yardages each session.</div>
+    </div>`,
+  'putting':`
+    <div class="rules-sec">
+      <div class="rules-ttl">LONG PUTTS — 4 PUTTS (25–35 FT) — MAX 12 PTS</div>
+      <div class="rules-row"><span>Ball finishes inside 24 inches</span><span class="rpts">3 pts</span></div>
+      <div class="rules-row"><span>Ball finishes inside 36 inches</span><span class="rpts">1 pt</span></div>
+      <div class="rules-row"><span>Outside 36 inches</span><span class="rpts">0 pts</span></div>
+    </div>
+    <div class="rules-sec">
+      <div class="rules-ttl">MEDIUM PUTTS — 5 PUTTS (12–18 FT) — MAX 25 PTS</div>
+      <div class="rules-row"><span>Make the putt</span><span class="rpts">5 pts</span></div>
+      <div class="rules-row"><span>Tap-in leave (&lt;18 in from hole)</span><span class="rpts">2 pts</span></div>
+      <div class="rules-row"><span>Miss</span><span class="rpts">0 pts</span></div>
+    </div>
+    <div class="rules-sec">
+      <div class="rules-ttl">SHORT PUTTS — 6 PUTTS (4–6 FT) — MAX 24 PTS</div>
+      <div class="rules-row"><span>Make the putt</span><span class="rpts">4 pts</span></div>
+      <div class="rules-row"><span>Miss</span><span class="rpts">0 pts</span></div>
+    </div>
+    <div class="rules-sec">
+      <div class="rules-ttl">MANDATORY 3-FOOTER (AT END)</div>
+      <div class="rules-row"><span>Make it — no penalty</span><span class="rpts">0 pts</span></div>
+      <div class="rules-row"><span>Miss it — penalty applied</span><span class="rpts neg">−5 pts</span></div>
+    </div>
+    <div class="rules-note">Track short makes (of 6) and medium makes (of 5) as sub-stats for trend analysis. The 3-footer is non-negotiable — this simulates clutch pressure scoring.</div>`,
+  'up-done':`
+    <div class="rules-sec">
+      <div class="rules-ttl">8 CHIP-THEN-PUTT HOLES — MAX 48 PTS</div>
+      <div class="rules-row"><span>Chip-in (hole out from off green)</span><span class="rpts">6 pts</span></div>
+      <div class="rules-row"><span>Up & Done (chip + 1-putt)</span><span class="rpts">4 pts</span></div>
+      <div class="rules-row"><span>2-putt after chip</span><span class="rpts">1 pt</span></div>
+      <div class="rules-row"><span>3+ putts after chip</span><span class="rpts">0 pts</span></div>
+    </div>
+    <div class="rules-sec">
+      <div class="rules-ttl">SETUP</div>
+      <div class="rules-note">Chip from various lies (fairway cut, rough, tight lie) within 30 yds of hole. Set up 8 different locations around the green. Chip first, then finish the putt — no gimmes. Track how many up-and-dones (4-pt outcomes) you complete as your key sub-stat.</div>
+    </div>`
+};
+
+/* ===================================================
+   ROTATIONS
+=================================================== */
+const ROTATIONS = {
+  2:[
+    {games:['putting','up-done'],rationale:'GREEN-SIDE MASTERY: Combining putting and chipping in one session delivers maximum short game synergy — these skills reinforce each other directly. Dominate within 30 yards.'},
+    {games:['putting','dead-yardage'],rationale:'SCORE-ZONE DOMINATION: Wedge proximity control pairs with green reading for stacking birdie opportunities. The two highest-ROI skills after putting.'},
+    {games:['putting','strike-lab'],rationale:'APPROACH + FINISH: Pure iron striking earns greens in regulation; putting closes the hole. The complete par-saver loop.'},
+    {games:['putting','fairway-finder'],rationale:'TEE-TO-GREEN: Build tee-box confidence and reduce double-bogey exposure, then putt it home. Full hole simulation in two stations.'}
+  ],
+  3:[
+    {games:['putting','up-done','dead-yardage'],rationale:'FULL SHORT GAME IMMERSION: The highest ROI rotation. Short game practice yields 4–5× more stroke savings per hour vs long game work. Putting anchors, wedges set up tap-ins, chips save pars.'},
+    {games:['putting','strike-lab','fairway-finder'],rationale:'LONG GAME DAY: When ball-striking needs focused attention. Driving precision + iron purity, always anchored by putting so scores improve even on a long game session.'},
+    {games:['putting','dead-yardage','strike-lab'],rationale:'SCORING ZONES SESSION: Every shot from 100 yds in. Iron proximity control feeds wedge precision which feeds makeable putts — the complete scoring chain.'},
+    {games:['putting','up-done','fairway-finder'],rationale:'SCRAMBLE SIMULATION: When rounds are lost missing tee shots and failing to save par. Fix the full hole trajectory: drive, miss, scramble, drain.'}
+  ],
+  4:[
+    {games:['putting','up-done','dead-yardage','strike-lab'],rationale:'MAXIMUM SCORING GAME: Putting anchors the session. Irons earn GIR, wedges control proximity, chips save bogeys — the complete scoring machine from 150 yds in.'},
+    {games:['putting','dead-yardage','strike-lab','fairway-finder'],rationale:'FULL BAG MINUS CHIP: Ideal for iron-heavy course prep or when your scrambling numbers are already strong and you need ball-striking improvements.'},
+    {games:['putting','up-done','strike-lab','fairway-finder'],rationale:'TRADITIONAL ROUND SIMULATION: Tee it → approach it → scramble it → drain it. The classic full-session structure that mirrors an actual round sequence.'}
+  ]
+};
+
+/* ===================================================
+   STATE
+=================================================== */
+let sessions = [];
+let currentTab = 'games';
+let filterGame = 'all';
+let modalGameId = null;
+let modalSubTab = 'rules';
+let rotSlots = 3;
+let rotIdx = {2:0,3:0,4:0};
+let delConfirmId = null;
+let audioCtx = null;
+
+/* ===================================================
+   STORAGE
+=================================================== */
+function loadData(){
+  try{const r=localStorage.getItem('fairway-lab-v3');if(r)sessions=JSON.parse(r)}catch(e){sessions=[]}
+}
+function saveData(){localStorage.setItem('fairway-lab-v3',JSON.stringify(sessions))}
+
+/* ===================================================
+   AUDIO (8-bit square wave)
+=================================================== */
+function playSound(type){
+  try{
+    if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();
+    osc.connect(gain);gain.connect(audioCtx.destination);osc.type='square';
+    const map={click:440,save:880,delete:220,error:110,tab:330,gen:550};
+    osc.frequency.value=map[type]||440;
+    gain.gain.setValueAtTime(0.04,audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.12);
+    osc.start(audioCtx.currentTime);osc.stop(audioCtx.currentTime+0.12);
+    if(type==='save'){
+      const osc2=audioCtx.createOscillator();osc2.connect(gain);
+      osc2.type='square';osc2.frequency.value=1320;
+      osc2.start(audioCtx.currentTime+0.1);osc2.stop(audioCtx.currentTime+0.22);
+    }
+  }catch(e){}
+}
+
+/* ===================================================
+   HELPERS
+=================================================== */
+function uuid(){return Date.now().toString(36)+Math.random().toString(36).substr(2,6)}
+function fmtDate(iso){
+  const d=new Date(iso);
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'})
+    +' '+d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
+}
+function getPct(gid,score){return score/GAMES[gid].max*100}
+function getGrade(gid,score){
+  const b=GAMES[gid].benchmarks;
+  if(score>=b.excellent)return{label:'EXCELLENT',cls:'grade-excellent'};
+  if(score>=b.solid)    return{label:'SOLID',    cls:'grade-solid'};
+  if(score>=b.work)     return{label:'OK',       cls:'grade-ok'};
+  return                      {label:'WORK',     cls:'grade-work'};
+}
+function getLastN(gid,n){return sessions.filter(s=>s.gameId===gid).slice(0,n)}
+function getAvgPct(gid){
+  const last=getLastN(gid,5);
+  if(!last.length)return null;
+  return last.reduce((s,x)=>s+x.score,0)/last.length/GAMES[gid].max*100;
+}
+function getSolidStreak(){
+  const src=filterGame==='all'?sessions:sessions.filter(s=>s.gameId===filterGame);
+  let n=0;for(const s of src){if(s.score>=GAMES[s.gameId].benchmarks.solid)n++;else break;}return n;
+}
+function getStrongestGame(){
+  let best=null,bp=-1;
+  GAME_IDS.forEach(gid=>{const p=getAvgPct(gid);if(p!==null&&p>bp){bp=p;best=gid;}});
+  return best;
+}
+function getFilteredSessions(){
+  return filterGame==='all'?sessions:sessions.filter(s=>s.gameId===filterGame);
+}
+function getOverallAvgPct(){
+  const src=getFilteredSessions();if(!src.length)return null;
+  return(src.reduce((a,s)=>a+getPct(s.gameId,s.score),0)/src.length).toFixed(1);
+}
+
+/* ===================================================
+   ROUTING
+=================================================== */
+function switchTab(tab){
+  playSound('tab');currentTab=tab;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  renderContent();
+}
+function renderContent(){
+  const el=document.getElementById('content');
+  if(currentTab==='games')     el.innerHTML=renderGamesTab();
+  else if(currentTab==='progress'){el.innerHTML=renderProgressTab();requestAnimationFrame(drawChart);}
+  else if(currentTab==='planner')  el.innerHTML=renderPlannerTab();
+  else if(currentTab==='framework')el.innerHTML=renderFrameworkTab();
+}
+
+/* ===================================================
+   GAMES TAB
+=================================================== */
+function renderGamesTab(){
+  return '<div class="games-grid">'+GAME_IDS.map(gid=>{
+    const g=GAMES[gid];
+    const ap=getAvgPct(gid);
+    const cnt=getLastN(gid,5).length;
+    const disp=ap!==null?ap.toFixed(1)+'%':'-- %';
+    const bw=ap!==null?Math.min(100,ap):0;
+    return `<div class="game-card" onclick="openModal('${gid}','rules')">
+      <div class="card-header"><span class="card-emoji">${g.emoji}</span><span class="card-name">${g.name}</span></div>
+      <div class="card-desc">${g.desc}</div>
+      <div class="card-avg-label">LAST ${cnt||0} SESSION AVG</div>
+      <div class="card-avg-val">${disp}</div>
+      <div class="avg-bar"><div class="avg-bar-fill" style="width:${bw}%"></div></div>
+      <div class="card-btns">
+        <button class="btn btn-secondary" onclick="event.stopPropagation();openModal('${gid}','rules')">RULES</button>
+        <button class="btn btn-primary"   onclick="event.stopPropagation();openModal('${gid}','log')">LOG SCORE</button>
+      </div>
+    </div>`;
+  }).join('')+'</div>';
+}
+
+/* ===================================================
+   MODAL
+=================================================== */
+function openModal(gid,sub='rules'){
+  playSound('click');modalGameId=gid;modalSubTab=sub;
+  const g=GAMES[gid];
+  document.getElementById('modal-gtitle').innerHTML=g.emoji+' '+g.name;
+  document.getElementById('modal').classList.add('open');
+  document.getElementById('stab-rules').classList.toggle('active',sub==='rules');
+  document.getElementById('stab-log').classList.toggle('active',sub==='log');
+  renderModalBody();
+}
+function closeModal(){
+  playSound('click');
+  document.getElementById('modal').classList.remove('open');
+  modalGameId=null;
+}
+function switchModalTab(tab){
+  playSound('click');modalSubTab=tab;
+  document.getElementById('stab-rules').classList.toggle('active',tab==='rules');
+  document.getElementById('stab-log').classList.toggle('active',tab==='log');
+  renderModalBody();
+}
+function renderModalBody(){
+  const el=document.getElementById('modal-body');
+  if(modalSubTab==='rules'){el.innerHTML=RULES_HTML[modalGameId]||'<p>Rules not available.</p>';}
+  else{el.innerHTML=buildLogForm(modalGameId);}
+}
+function buildLogForm(gid){
+  const g=GAMES[gid];const b=g.benchmarks;
+  const subFields=g.subStats.map(ss=>{
+    const inp=ss.type==='number'
+      ?`<input type="number" id="ss-${ss.key}" min="${ss.min}" max="${ss.max}" placeholder="0">`
+      :`<input type="text" id="ss-${ss.key}" placeholder="${ss.placeholder||''}">`;
+    return `<div class="field"><label>${ss.label}</label>${inp}</div>`;
+  }).join('');
+  return `<div class="log-form">
+    <div class="field">
+      <label>SCORE (0 – ${g.max} PTS MAX)</label>
+      <input type="number" id="log-score" min="0" max="${g.max}" placeholder="Enter your score">
+    </div>
+    ${subFields}
+    <div class="field">
+      <label>SESSION NOTES (OPTIONAL)</label>
+      <textarea id="log-notes" placeholder="Key observations, conditions, feel..."></textarea>
+
+```
+</div>
+<div class="bm-row">
+  <span class="bm-chip bm-work">WORK &lt;${b.work}</span>
+  <span class="bm-chip bm-ok">OK ${b.work}–${b.solid-1}</span>
+  <span class="bm-chip bm-solid">SOLID ${b.solid}–${b.excellent-1}</span>
+  <span class="bm-chip bm-excellent">EXCELLENT ${b.excellent}+</span>
+</div>
+<button class="btn-save" onclick="submitLog('${gid}')">► SAVE SESSION</button>
+<div class="err-msg" id="log-err"></div>
+```
+
+  </div>`;
+}
+function submitLog(gid){
+  const scoreEl=document.getElementById('log-score');
+  const score=parseInt(scoreEl.value);
+  const g=GAMES[gid];
+  if(isNaN(score)||score<0||score>g.max){
+    playSound('error');
+    document.getElementById('log-err').textContent='⚠ SCORE MUST BE 0 – '+g.max;
+    return;
+  }
+  const subStats={};
+  g.subStats.forEach(ss=>{
+    const el=document.getElementById('ss-'+ss.key);
+    if(el)subStats[ss.key]=ss.type==='number'?parseInt(el.value)||0:el.value;
+  });
+  const notes=(document.getElementById('log-notes').value||'').trim();
+  sessions.unshift({id:uuid(),gameId:gid,score,date:new Date().toISOString(),notes,subStats});
+  saveData();
+  playSound('save');
+  closeModal();
+  showToast('SESSION SAVED — '+score+'/'+g.max+' ('+getPct(gid,score).toFixed(1)+'%)');
+  renderContent();
+}
+
+/* ===================================================
+PROGRESS TAB
+=================================================== */
+function renderProgressTab(){
+const filterBtns=[‘all’,…GAME_IDS].map(gid=>{
+const lbl=gid===‘all’?‘ALL GAMES’:GAMES[gid].emoji+’ ‘+GAMES[gid].name.split(’ ‘).slice(0,2).join(’ ‘);
+return`<button class="filter-btn${filterGame===gid?' active':''}" onclick="setFilter('${gid}')">${lbl}</button>`;
+}).join(’’);
+const total=getFilteredSessions().length;
+const avgPct=getOverallAvgPct();
+const streak=getSolidStreak();
+const strong=getStrongestGame();
+const src=getFilteredSessions();
+const items=src.map(s=>{
+const g=GAMES[s.gameId];
+const pct=getPct(s.gameId,s.score);
+const grade=getGrade(s.gameId,s.score);
+let sub=’’;
+if(s.gameId===‘putting’&&s.subStats){
+const sm=s.subStats.shortMakes;const mm=s.subStats.mediumMakes;
+if(sm!==undefined&&!isNaN(sm))sub+=’SHORT: ‘+sm+’/6 ’;
+if(mm!==undefined&&!isNaN(mm))sub+=‘MED: ‘+mm+’/5’;
+}
+if(s.gameId===‘up-done’&&s.subStats?.upAndDowns!==undefined)
+sub=‘UP&DOWNS: ‘+s.subStats.upAndDowns+’/8’;
+if(s.gameId===‘dead-yardage’&&s.subStats?.yardages)
+sub=‘YARDS: ‘+s.subStats.yardages;
+return`<div class="sitem ${grade.cls}"> <span class="sitem-emoji">${g.emoji}</span> <div class="sitem-info"> <div class="sitem-name">${g.name}</div> <div class="sitem-date">${fmtDate(s.date)}</div> ${sub?`<div class="sitem-sub">${sub.trim()}</div>`:''} ${s.notes?`<div class="sitem-notes">”${s.notes}”</div>`:''} </div> <div class="sitem-right"> <div class="grade-badge ${grade.cls}">${grade.label}</div> <div class="sitem-score">${s.score}</div> <div class="sitem-pct">${pct.toFixed(1)}%</div> <button class="btn btn-danger" onclick="promptDelete('${s.id}')">DEL</button> </div> </div>`;
+}).join(’’);
+return` <div class="filter-row">${filterBtns}</div> <div class="stats-row"> <div class="stat-box"><div class="stat-val">${total}</div><div class="stat-lbl">TOTAL SESSIONS</div></div> <div class="stat-box"><div class="stat-val">${avgPct!==null?avgPct+'%':'--'}</div><div class="stat-lbl">AVG SCORE %</div></div> <div class="stat-box"><div class="stat-val">${streak}</div><div class="stat-lbl">SOLID STREAK</div></div> <div class="stat-box"><div class="stat-val">${strong?GAMES[strong].emoji:'--'}</div><div class="stat-lbl">STRONGEST GAME</div></div> </div> <div class="chart-wrap"> <div class="chart-ttl">SCORE % OVER TIME — ${filterGame==='all'?'ALL GAMES':GAMES[filterGame].name}</div> <svg id="chart-svg" height="180" style="width:100%"></svg> </div> <div class="slog-ttl">SESSION LOG (${src.length})</div> ${src.length?items:'<div class="no-data">NO SESSIONS LOGGED YET<br><br>HIT LOG SCORE ON ANY<br>GAME CARD TO START</div>'}`;
+}
+function setFilter(gid){filterGame=gid;renderContent()}
+
+/* ===================================================
+CHART
+=================================================== */
+function drawChart(){
+const svg=document.getElementById(‘chart-svg’);if(!svg)return;
+const filtered=[…getFilteredSessions()].reverse();
+if(filtered.length<2){
+svg.innerHTML=`<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#333" font-size="8" font-family="'Press Start 2P',monospace">${filtered.length===0?'NO DATA YET':'LOG MORE SESSIONS TO SEE TREND'}</text>`;
+return;
+}
+const W=svg.clientWidth||600,H=180;
+const pl=46,pr=62,pt=12,pb=30;
+const iw=W-pl-pr,ih=H-pt-pb;
+const pts=filtered.map((s,i)=>{
+const pct=getPct(s.gameId,s.score);
+return{x:pl+(i/(filtered.length-1))*iw,y:pt+(1-pct/100)*ih,pct,date:s.date};
+});
+const solidPct=filterGame!==‘all’?(GAMES[filterGame].benchmarks.solid/GAMES[filterGame].max*100):65;
+const solidY=(pt+(1-solidPct/100)*ih).toFixed(1);
+const recent=pts.slice(-3),older=pts.length>3?pts.slice(-6,-3):[];
+const rAvg=recent.reduce((a,p)=>a+p.pct,0)/recent.length;
+const oAvg=older.length?older.reduce((a,p)=>a+p.pct,0)/older.length:rAvg-0.1;
+const lc=rAvg>=oAvg?’#39ff14’:’#ffe600’;
+const grid=[0,25,50,75,100].map(p=>{
+const y=(pt+(1-p/100)*ih).toFixed(1);
+return`<line x1="${pl}" y1="${y}" x2="${W-pr}" y2="${y}" stroke="#191919" stroke-width="1"/> <text x="${pl-4}" y="${y}" dy="4" text-anchor="end" fill="#444" font-size="8" font-family="DM Mono,monospace">${p}%</text>`;
+}).join(’’);
+const pathD=pts.map((p,i)=>`${i===0?'M':'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(’ ’);
+const d1=new Date(filtered[0].date).toLocaleDateString(‘en-US’,{month:‘short’,day:‘numeric’});
+const d2=new Date(filtered[filtered.length-1].date).toLocaleDateString(‘en-US’,{month:‘short’,day:‘numeric’});
+svg.innerHTML=` ${grid} <line x1="${pl}" y1="${solidY}" x2="${W-pr}" y2="${solidY}" stroke="#ffe600" stroke-dasharray="8,4" stroke-width="1.5" opacity=".7"/> <text x="${W-pr+5}" y="${solidY}" dy="4" fill="#ffe600" font-size="7" font-family="'Press Start 2P',monospace">SOLID</text> <path d="${pathD}" fill="none" stroke="${lc}" stroke-width="2.5" style="filter:drop-shadow(0 0 5px ${lc})"/> ${pts.map(p=>`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4.5" fill="${lc}" style="filter:drop-shadow(0 0 5px ${lc})"/>`).join('')} <text x="${pl}" y="${H-4}" fill="#3a3a3a" font-size="8" font-family="DM Mono,monospace">${d1}</text> <text x="${W-pr}" y="${H-4}" text-anchor="end" fill="#3a3a3a" font-size="8" font-family="DM Mono,monospace">${d2}</text>`;
+}
+window.addEventListener(‘resize’,()=>{if(currentTab===‘progress’)drawChart()});
+
+/* ===================================================
+DELETE
+=================================================== */
+function promptDelete(id){
+playSound(‘click’);delConfirmId=id;
+document.getElementById(‘confirm-modal’).classList.add(‘open’);
+}
+function closeConfirm(){
+document.getElementById(‘confirm-modal’).classList.remove(‘open’);
+delConfirmId=null;
+}
+function confirmDelete(){
+if(!delConfirmId)return;
+sessions=sessions.filter(s=>s.id!==delConfirmId);
+saveData();closeConfirm();
+playSound(‘delete’);showToast(‘SESSION DELETED’);renderContent();
+}
+
+/* ===================================================
+TOAST
+=================================================== */
+function showToast(msg){
+const t=document.getElementById(‘toast’);
+t.textContent=’► ’+msg;t.classList.add(‘show’);
+setTimeout(()=>t.classList.remove(‘show’),2800);
+}
+
+/* ===================================================
+SESSION PLANNER
+=================================================== */
+function renderPlannerTab(){
+const slotBtns=[2,3,4].map(n=>
+`<button class="slot-btn${rotSlots===n?' active':''}" onclick="setSlots(${n})">${n} GAMES</button>`
+).join(’’);
+const rotList=ROTATIONS[rotSlots];
+const idx=rotIdx[rotSlots]%rotList.length;
+const rot=rotList[idx];
+const gameRows=rot.games.map((gid,i)=>{
+const g=GAMES[gid];const ap=getAvgPct(gid);
+return`<div class="rot-game-row"> <span class="rot-num">#${i+1}</span> <span style="font-size:18px">${g.emoji}</span> <span class="rot-gname">${g.name}</span> <span class="rot-meta">MAX ${g.max}pts${ap!==null?' · AVG '+ap.toFixed(0)+'%':''}</span> </div>`;
+}).join(’’);
+const totalMin=rot.games.length*18;
+return` <div class="plan-hdr">SESSION PLANNER</div> <div style="font-size:10px;color:var(--text-dim);margin-bottom:18px;line-height:1.7"> Select available game slots. Putting always anchors every rotation. </div> <div class="slot-picker">${slotBtns}</div> <div class="rot-box"> <div class="rot-ttl">ROTATION ${idx+1} OF ${rotList.length} — APPROX ${totalMin} MIN</div> <div class="rot-games">${gameRows}</div> <div class="rot-rationale">${rot.rationale}</div> </div> <button class="btn-gen" onclick="nextRotation()">▶▶ GENERATE NEXT ROTATION</button> <div class="plan-note"> <div class="plan-note-ttl">ORDERING LOGIC</div> Putting comes first — always. Short game blocks follow to build feel before switching to mechanics. Long game (when included) goes last — end with free-flowing full swings after scoring work is done, never before it. This sequencing preserves mental freshness for your highest-impact skills. </div>`;
+}
+function setSlots(n){playSound(‘click’);rotSlots=n;renderContent()}
+function nextRotation(){
+playSound(‘gen’);
+rotIdx[rotSlots]=(rotIdx[rotSlots]+1)%ROTATIONS[rotSlots].length;
+renderContent();
+}
+
+/* ===================================================
+FRAMEWORK TAB
+=================================================== */
+function renderFrameworkTab(){
+return` <div class="fw-sec"> <div class="fw-ttl">📊 SCORING IMPACT PYRAMID</div> <div class="fw-row"><span>🕳️🏖️ Short Game (Putting + Chipping)</span><span class="fw-freq">4–5× / WEEK</span></div> <div class="fw-row"><span>⛳🎯 Iron Play + Wedge Control</span><span class="fw-freq">3–4× / WEEK</span></div> <div class="fw-row"><span>🏌️ Driving (Tee Game)</span><span class="fw-freq">1–2× / WEEK</span></div> <div class="fw-note">Short game practice delivers 4–5× more stroke savings per hour vs long game work. Build the pyramid from the green back to the tee box — always.</div> </div> <div class="fw-sec"> <div class="fw-ttl">⚡ FOUR CORE PRINCIPLES</div> <div class="prin-item"> <div class="prin-lbl">P1 — PUTTING IS NEVER OPTIONAL</div> Every session includes at least one putting game. Green reading and speed control decay fastest without regular reps. This is the only non-negotiable rule of the system. </div> <div class="prin-item"> <div class="prin-lbl">P2 — PAIR LONG & SHORT</div> When working on ball-striking, always pair with a short game game. Scores improve at the green, not just off the tee. Long game work without short game pairing wastes half the session's potential. </div> <div class="prin-item"> <div class="prin-lbl">P3 — THE 3-DAY RULE</div> Never go more than 3 days without a practice session. Skill decay — especially feel shots and putting speed — accelerates sharply past this threshold. A 20-min putting session resets the clock. </div> <div class="prin-item"> <div class="prin-lbl">P4 — SCORE EVERY TIME</div> Log a score every session. Unscored practice has no feedback loop. Mini-game scores create accountability, reveal trends, and make improvement visible over weeks of data. </div> </div> <div class="fw-sec"> <div class="fw-ttl">📅 WEEKLY SESSION TEMPLATE</div> <div class="day-row"><span class="day-lbl">MON</span><span>Putting + Up & Done — 45 min (short game priority open)</span></div> <div class="day-row"><span class="day-lbl">TUE</span><span>Dead Yardage + Strike Lab + Putting — 60 min (scoring zones)</span></div> <div class="day-row"><span class="day-lbl">WED</span><span>Rest OR 3-Range Putting only — 20 min (3-day rule maintenance)</span></div> <div class="day-row"><span class="day-lbl">THU</span><span>Putting + Up & Done + Dead Yardage — 60 min (full short game)</span></div> <div class="day-row"><span class="day-lbl">FRI</span><span>Fairway Finder + Strike Lab + Putting — 60 min (long game day)</span></div> <div class="day-row"><span class="day-lbl">SAT</span><span>18 holes — apply skills, track strokes gained proxies</span></div> <div class="day-row"><span class="day-lbl">SUN</span><span>Rest — review session logs, plan focus areas for next week</span></div> </div> <div class="fw-sec"> <div class="fw-ttl">🔄 COURSE-TO-PRACTICE FEEDBACK LOOP</div> <div class="step-item"> <span class="step-num">01</span> <div><span style="color:var(--green);font-family:var(--font-px);font-size:7px">TRACK STROKES GAINED PROXIES</span><br><br> Log % fairways hit, greens in regulation (GIR), putts per hole, and scrambling % after every round. These four numbers are your leading indicators for which mini-games to prioritize.</div> </div> <div class="step-item"> <span class="step-num">02</span> <div><span style="color:var(--green);font-family:var(--font-px);font-size:7px">MAP MISSES TO MINI-GAMES</span><br><br> Missed GIR + poor proximity → Dead Yardage + Strike Lab. Poor scrambling % → Up & Done. High putts/hole → 3-Range Putting. Low fairways % → Fairway Finder. One metric maps to one game.</div> </div> <div class="step-item"> <span class="step-num">03</span> <div><span style="color:var(--green);font-family:var(--font-px);font-size:7px">ADJUST FREQUENCY FOR 2 WEEKS</span><br><br> Increase the identified weak-area mini-game by 1–2 additional sessions per week. Keep other games at maintenance frequency. Commit to the adjustment for exactly 14 days before re-evaluating.</div> </div> <div class="step-item"> <span class="step-num">04</span> <div><span style="color:var(--green);font-family:var(--font-px);font-size:7px">CONFIRM WITH MINI-GAME TRENDS</span><br><br> Open the Progress tab, isolate the target game via filter, and check the score % trend line. If the line trends upward and crosses the SOLID benchmark — the adjustment is working. If flat after 2 weeks, try a different mini-game pairing.</div> </div> </div>`;
+}
+
+/* ===================================================
+INIT
+=================================================== */
+loadData();
+renderContent();
+
+document.getElementById(‘modal’).addEventListener(‘click’,function(e){if(e.target===this)closeModal()});
+document.getElementById(‘confirm-modal’).addEventListener(‘click’,function(e){if(e.target===this)closeConfirm()});
+document.addEventListener(‘keydown’,e=>{if(e.key===‘Escape’){closeModal();closeConfirm()}});
+</script>
+
+</body>
+</html>
