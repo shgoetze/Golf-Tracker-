@@ -1,0 +1,2078 @@
+<!DOCTYPE html>
+<!-- Fairway Lab v3.1 - 2026-04-28 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⛳ FAIRWAY LAB v3.1</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#050505;--bg2:#0d0d0d;--bg3:#111;
+  --green:#39ff14;--yellow:#ffe600;--red:#ff3030;--orange:#ff8c00;--blue:#00cfff;--purple:#b366ff;
+  --dim:#2a2a2a;--dim2:#1a1a1a;--text:#c8c8c8;--text-dim:#555;
+  --font-px:'Press Start 2P',monospace;--font-mono:'DM Mono','Courier New',monospace;
+  --glow-g:0 0 8px var(--green),0 0 22px rgba(57,255,20,.25);
+  --glow-y:0 0 8px var(--yellow),0 0 22px rgba(255,230,0,.25);
+  --glow-r:0 0 8px var(--red),0 0 18px rgba(255,48,48,.25);
+  --glow-b:0 0 8px var(--blue),0 0 22px rgba(0,207,255,.25);
+}
+html{font-size:14px}
+body{background:var(--bg);color:var(--text);font-family:var(--font-mono);min-height:100vh;position:relative;overflow-x:hidden}
+
+/* SCANLINES */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
+  background:repeating-linear-gradient(0deg,transparent 0,transparent 2px,rgba(0,0,0,.13) 2px,rgba(0,0,0,.13) 4px);
+}
+/* CRT VIGNETTE */
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:9998;
+  background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.72) 100%);
+}
+
+#app{max-width:880px;margin:0 auto;padding:0 12px 70px}
+
+/* HEADER */
+header{
+  padding:26px 0 14px;text-align:center;
+  border-bottom:2px solid var(--green);margin-bottom:0;position:relative;
+}
+header .glow-line{height:2px;background:linear-gradient(90deg,transparent,var(--green),transparent);margin-top:4px;filter:blur(2px)}
+.h-title{font-family:var(--font-px);font-size:clamp(14px,4vw,26px);color:var(--green);
+  text-shadow:var(--glow-g);letter-spacing:4px;animation:flicker 5s infinite}
+.h-sub{font-size:9px;color:var(--text-dim);letter-spacing:3px;margin-top:7px}
+.cursor::after{content:'_';animation:blink 1s step-end infinite}
+
+/* TABS */
+.tabs{display:flex;background:var(--bg2);border:2px solid var(--dim);border-top:none;margin-bottom:20px}
+.tab-btn{
+  flex:1;padding:11px 4px;font-family:var(--font-px);font-size:clamp(5px,1.4vw,8px);
+  background:none;border:none;color:var(--text-dim);cursor:pointer;
+  border-right:1px solid var(--dim);position:relative;transition:all .12s;letter-spacing:1px;
+}
+.tab-btn:last-child{border-right:none}
+.tab-btn:hover{color:var(--green);background:rgba(57,255,20,.04)}
+.tab-btn.active{color:var(--green);background:rgba(57,255,20,.07);text-shadow:0 0 8px var(--green)}
+.tab-btn.active::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--green);box-shadow:0 0 6px var(--green)}
+
+/* BACKUP BANNER */
+.backup-banner{
+  background:rgba(255,140,0,.08);border:2px solid var(--orange);
+  padding:11px 14px;margin-bottom:14px;display:flex;align-items:center;gap:12px;
+  font-family:var(--font-mono);font-size:11px;color:var(--orange);
+}
+.backup-banner-msg{flex:1;line-height:1.5}
+.backup-banner-btn{
+  font-family:var(--font-px);font-size:7px;padding:7px 11px;
+  background:none;border:2px solid var(--orange);color:var(--orange);cursor:pointer;letter-spacing:1px;
+}
+.backup-banner-btn:hover{background:rgba(255,140,0,.12);box-shadow:0 0 8px rgba(255,140,0,.3)}
+.backup-banner-x{
+  background:none;border:none;color:var(--orange);font-size:14px;cursor:pointer;padding:4px 6px;
+}
+
+/* BUTTONS */
+.btn{
+  font-family:var(--font-px);font-size:7px;padding:8px 11px;cursor:pointer;
+  background:none;border:2px solid var(--dim);color:var(--text);transition:all .12s;letter-spacing:1px;
+}
+.btn:hover{border-color:var(--green);color:var(--green)}
+.btn-primary{border-color:var(--green);color:var(--green)}
+.btn-primary:hover{background:rgba(57,255,20,.08);box-shadow:var(--glow-g)}
+.btn-secondary{border-color:var(--yellow);color:var(--yellow)}
+.btn-secondary:hover{background:rgba(255,230,0,.08);box-shadow:var(--glow-y)}
+.btn-danger{border-color:var(--red);color:var(--red)}
+.btn-danger:hover{background:rgba(255,48,48,.08);box-shadow:var(--glow-r)}
+.btn-blue{border-color:var(--blue);color:var(--blue)}
+.btn-blue:hover{background:rgba(0,207,255,.08);box-shadow:var(--glow-b)}
+
+/* GAME CARDS */
+.games-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.game-card{
+  background:var(--bg2);border:2px solid var(--dim);padding:16px;cursor:pointer;
+  transition:all .15s;position:relative;overflow:hidden;
+}
+.game-card::before,.game-card::after{
+  content:'';position:absolute;width:8px;height:8px;border:2px solid var(--green);
+  opacity:0;transition:opacity .15s;
+}
+.game-card::before{top:-1px;left:-1px;border-right:none;border-bottom:none}
+.game-card::after{bottom:-1px;right:-1px;border-left:none;border-top:none}
+.game-card:hover{border-color:var(--green);box-shadow:0 0 14px rgba(57,255,20,.15)}
+.game-card:hover::before,.game-card:hover::after{opacity:1}
+.card-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.card-emoji{font-size:24px}
+.card-name{font-family:var(--font-px);font-size:9px;color:var(--green);letter-spacing:1px}
+.card-desc{font-size:10px;color:var(--text-dim);margin-bottom:14px;line-height:1.5}
+.card-avg-label{font-family:var(--font-px);font-size:6px;color:var(--text-dim);margin-bottom:4px}
+.card-avg-val{font-family:var(--font-px);font-size:13px;color:var(--yellow);text-shadow:var(--glow-y);margin-bottom:8px}
+.avg-bar{height:4px;background:var(--dim);position:relative;overflow:hidden;margin-bottom:12px}
+.avg-bar-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--yellow));transition:width .35s}
+.card-btns{display:flex;gap:8px}
+.card-btns .btn{flex:1;text-align:center}
+
+/* MODAL */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;align-items:center;justify-content:center;padding:14px}
+.modal-ov.open{display:flex}
+.modal-box{background:var(--bg2);border:2px solid var(--green);box-shadow:var(--glow-g);max-width:600px;width:100%;max-height:90vh;overflow-y:auto;position:relative}
+.modal-titlebar{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;border-bottom:2px solid var(--dim)}
+.modal-gtitle{font-family:var(--font-px);font-size:9px;color:var(--green);display:flex;align-items:center;gap:10px}
+.modal-close{background:none;border:2px solid var(--red);color:var(--red);font-family:var(--font-px);font-size:7px;padding:5px 8px;cursor:pointer}
+.modal-close:hover{background:var(--red);color:var(--bg)}
+.modal-stabs{display:flex;border-bottom:2px solid var(--dim)}
+.modal-stab{flex:1;padding:9px;font-family:var(--font-px);font-size:6px;background:none;border:none;color:var(--text-dim);cursor:pointer;border-right:1px solid var(--dim);transition:all .12s}
+.modal-stab:last-child{border-right:none}
+.modal-stab.active{color:var(--yellow);background:rgba(255,230,0,.05);text-shadow:0 0 6px var(--yellow)}
+.modal-body{padding:18px}
+
+/* RULES */
+.rules-sec{margin-bottom:16px}
+.rules-ttl{font-family:var(--font-px);font-size:7px;color:var(--yellow);margin-bottom:9px;border-left:3px solid var(--yellow);padding-left:8px}
+.rules-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:10px;gap:8px}
+.rules-row span:first-child{flex:1}
+.rpts{font-family:var(--font-px);font-size:8px;color:var(--green);white-space:nowrap}
+.rpts.neg{color:var(--red)}
+.rpts.bonus{color:var(--blue)}
+.rules-note{font-size:10px;line-height:1.7;color:var(--text-dim);padding:10px;background:rgba(255,230,0,.04);border:1px solid rgba(255,230,0,.15);margin-top:8px}
+
+/* LOG FORM */
+.log-form .field{margin-bottom:14px}
+.log-form label{display:block;font-family:var(--font-px);font-size:6px;color:var(--yellow);margin-bottom:6px}
+.log-form input,.log-form textarea,.log-form select{
+  width:100%;background:var(--bg);border:2px solid var(--dim);color:var(--text);
+  font-family:var(--font-mono);font-size:13px;padding:9px;outline:none;
+  transition:border-color .12s,box-shadow .12s
+}
+.log-form input:focus,.log-form textarea:focus,.log-form select:focus{border-color:var(--green);box-shadow:0 0 8px rgba(57,255,20,.25)}
+.log-form textarea{height:72px;resize:vertical}
+.bm-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;padding:10px;background:var(--bg);border:1px solid var(--dim)}
+.bm-chip{font-family:var(--font-px);font-size:6px;padding:3px 7px;border:1px solid}
+.bm-work{color:var(--red);border-color:var(--red)}
+.bm-ok{color:var(--orange);border-color:var(--orange)}
+.bm-solid{color:var(--yellow);border-color:var(--yellow)}
+.bm-excellent{color:var(--green);border-color:var(--green)}
+.btn-save{
+  width:100%;padding:13px;font-family:var(--font-px);font-size:9px;
+  background:var(--green);color:var(--bg);border:none;cursor:pointer;letter-spacing:2px;transition:all .1s
+}
+.btn-save:hover{box-shadow:var(--glow-g);filter:brightness(1.1)}
+.err-msg{color:var(--red);font-family:var(--font-px);font-size:7px;margin-top:10px;text-align:center;min-height:16px}
+
+/* PROGRESS */
+.filter-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px}
+.filter-btn{padding:6px 11px;font-family:var(--font-px);font-size:6px;background:none;border:2px solid var(--dim);color:var(--text-dim);cursor:pointer;transition:all .12s}
+.filter-btn:hover{border-color:var(--green);color:var(--green)}
+.filter-btn.active{border-color:var(--yellow);color:var(--yellow);background:rgba(255,230,0,.05)}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.stat-box{background:var(--bg2);border:2px solid var(--dim);padding:13px 8px;text-align:center;position:relative}
+.stat-box::before{content:'';position:absolute;top:-1px;left:-1px;width:6px;height:6px;border-top:2px solid var(--dim);border-left:2px solid var(--dim)}
+.stat-val{font-family:var(--font-px);font-size:15px;color:var(--green);text-shadow:0 0 10px var(--green);margin-bottom:5px}
+.stat-lbl{font-family:var(--font-px);font-size:5px;color:var(--text-dim);line-height:1.8}
+.chart-wrap{background:var(--bg2);border:2px solid var(--dim);padding:14px;margin-bottom:22px}
+.chart-ttl{font-family:var(--font-px);font-size:7px;color:var(--text-dim);margin-bottom:12px}
+#chart-svg{width:100%;display:block}
+.slog-ttl{font-family:var(--font-px);font-size:7px;color:var(--text-dim);margin-bottom:12px;border-bottom:1px solid var(--dim);padding-bottom:8px}
+.sitem{
+  background:var(--bg2);border:1px solid var(--dim);border-left:3px solid var(--dim2);
+  padding:11px 12px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px
+}
+.sitem.grade-excellent{border-left-color:var(--green)}
+.sitem.grade-solid{border-left-color:var(--yellow)}
+.sitem.grade-ok{border-left-color:var(--orange)}
+.sitem.grade-work{border-left-color:var(--red)}
+.sitem-emoji{font-size:20px;flex-shrink:0;line-height:1}
+.sitem-info{flex:1;min-width:0}
+.sitem-name{font-family:var(--font-px);font-size:7px;color:var(--text);margin-bottom:3px}
+.sitem-date{font-size:9px;color:var(--text-dim);margin-bottom:3px}
+.sitem-sub{font-size:9px;color:#777;margin-bottom:2px}
+.sitem-notes{font-size:9px;color:#666;font-style:italic}
+.sitem-right{text-align:right;flex-shrink:0}
+.sitem-score{font-family:var(--font-px);font-size:12px;color:var(--green)}
+.sitem-pct{font-size:9px;color:var(--text-dim);margin-bottom:4px}
+.grade-badge{font-family:var(--font-px);font-size:6px;padding:2px 5px;border:1px solid;display:inline-block;margin-bottom:5px}
+.grade-badge.grade-excellent{color:var(--green);border-color:var(--green)}
+.grade-badge.grade-solid{color:var(--yellow);border-color:var(--yellow)}
+.grade-badge.grade-ok{color:var(--orange);border-color:var(--orange)}
+.grade-badge.grade-work{color:var(--red);border-color:var(--red)}
+.no-data{text-align:center;padding:44px 20px;font-family:var(--font-px);font-size:7px;color:var(--text-dim);line-height:2.4}
+
+/* FOCUSES TAB */
+.foc-hdr{font-family:var(--font-px);font-size:9px;color:var(--green);margin-bottom:14px}
+.foc-sub{font-size:10px;color:var(--text-dim);margin-bottom:20px;line-height:1.7}
+.foc-sec{background:var(--bg2);border:2px solid var(--dim);padding:16px;margin-bottom:14px;position:relative}
+.foc-sec::before{content:'';position:absolute;top:-1px;left:-1px;width:8px;height:8px;border-top:2px solid var(--yellow);border-left:2px solid var(--yellow)}
+.foc-sec-ttl{font-family:var(--font-px);font-size:8px;color:var(--yellow);margin-bottom:12px;letter-spacing:1px}
+.foc-priority{
+  display:flex;align-items:center;gap:12px;padding:12px;
+  background:var(--bg);border-left:4px solid var(--red);margin-bottom:8px;
+}
+.foc-priority.lvl-2{border-left-color:var(--orange)}
+.foc-priority.lvl-3{border-left-color:var(--yellow)}
+.foc-priority.lvl-good{border-left-color:var(--green)}
+.foc-rank{
+  font-family:var(--font-px);font-size:13px;color:var(--red);
+  width:30px;flex-shrink:0;text-align:center;
+}
+.foc-priority.lvl-2 .foc-rank{color:var(--orange)}
+.foc-priority.lvl-3 .foc-rank{color:var(--yellow)}
+.foc-priority.lvl-good .foc-rank{color:var(--green)}
+.foc-content{flex:1;min-width:0}
+.foc-area{font-family:var(--font-px);font-size:8px;color:var(--text);margin-bottom:5px;letter-spacing:1px}
+.foc-metric{font-size:11px;color:var(--text-dim);margin-bottom:5px;line-height:1.5}
+.foc-metric strong{color:var(--text)}
+.foc-rec{font-size:10px;color:#888;line-height:1.6;border-left:2px solid var(--green);padding-left:9px;margin-top:6px}
+.foc-empty{text-align:center;padding:30px 16px;font-size:11px;color:var(--text-dim);line-height:1.8}
+.foc-empty-ttl{font-family:var(--font-px);font-size:8px;color:var(--yellow);margin-bottom:14px}
+
+/* ON COURSE TAB */
+.oc-hdr{font-family:var(--font-px);font-size:9px;color:var(--green);margin-bottom:14px}
+.oc-sub{font-size:10px;color:var(--text-dim);margin-bottom:20px;line-height:1.7}
+.oc-actions{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.oc-actions .btn{flex:1;min-width:140px;padding:13px;font-size:8px;text-align:center}
+
+.oc-active{background:var(--bg2);border:2px solid var(--green);box-shadow:var(--glow-g);padding:18px;margin-bottom:18px}
+.oc-active-ttl{font-family:var(--font-px);font-size:9px;color:var(--green);margin-bottom:6px}
+.oc-active-meta{font-size:10px;color:var(--text-dim);margin-bottom:14px;line-height:1.6}
+.oc-totals{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.oc-tot{background:var(--bg);border:1px solid var(--dim);padding:9px 6px;text-align:center}
+.oc-tot-val{font-family:var(--font-px);font-size:11px;color:var(--green);margin-bottom:3px}
+.oc-tot-lbl{font-family:var(--font-px);font-size:5px;color:var(--text-dim);line-height:1.6}
+
+.hole-list{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.hole-row{
+  display:flex;align-items:center;gap:8px;padding:9px 11px;
+  background:var(--bg);border:1px solid var(--dim);font-size:10px;
+}
+.hole-row.complete{border-left:3px solid var(--green)}
+.hole-row.incomplete{border-left:3px solid var(--orange);background:rgba(255,140,0,.04)}
+.hole-num{font-family:var(--font-px);font-size:8px;color:var(--yellow);width:38px;flex-shrink:0}
+.hole-detail{flex:1;color:var(--text-dim);font-size:10px;line-height:1.5}
+.hole-detail strong{color:var(--text)}
+.hole-edit-btn{font-family:var(--font-px);font-size:6px;padding:5px 8px;background:none;border:1px solid var(--dim);color:var(--text-dim);cursor:pointer}
+.hole-edit-btn:hover{border-color:var(--yellow);color:var(--yellow)}
+
+.oc-end-btns{display:flex;gap:10px;flex-wrap:wrap}
+.oc-end-btns .btn{flex:1;min-width:120px;padding:11px;font-size:8px;text-align:center}
+
+/* HOLE ENTRY MODAL */
+.hole-entry .field{margin-bottom:14px}
+.hole-entry label{display:block;font-family:var(--font-px);font-size:6px;color:var(--yellow);margin-bottom:7px;letter-spacing:1px}
+.choice-row{display:flex;flex-wrap:wrap;gap:7px}
+.choice-btn{
+  padding:11px 13px;font-family:var(--font-px);font-size:7px;background:var(--bg);
+  border:2px solid var(--dim);color:var(--text-dim);cursor:pointer;transition:all .12s;
+  flex:1;min-width:80px;text-align:center;letter-spacing:1px;
+}
+.choice-btn:hover{border-color:var(--green);color:var(--green)}
+.choice-btn.active{border-color:var(--green);color:var(--green);background:rgba(57,255,20,.08);box-shadow:0 0 8px rgba(57,255,20,.2)}
+.choice-btn.danger.active{border-color:var(--red);color:var(--red);background:rgba(255,48,48,.08);box-shadow:0 0 8px rgba(255,48,48,.2)}
+.choice-btn.warn.active{border-color:var(--orange);color:var(--orange);background:rgba(255,140,0,.08);box-shadow:0 0 8px rgba(255,140,0,.2)}
+
+.num-pad{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.num-btn{
+  padding:14px 6px;font-family:var(--font-px);font-size:11px;background:var(--bg);
+  border:2px solid var(--dim);color:var(--text-dim);cursor:pointer;text-align:center;transition:all .12s;
+}
+.num-btn:hover{border-color:var(--green);color:var(--green)}
+.num-btn.active{border-color:var(--green);color:var(--green);background:rgba(57,255,20,.08);box-shadow:0 0 8px rgba(57,255,20,.2)}
+
+.hole-entry .conditional{display:none;border-left:2px solid var(--yellow);padding-left:11px;margin-left:4px;margin-bottom:14px}
+.hole-entry .conditional.show{display:block}
+
+/* DATA MGMT */
+.dm-sec{background:var(--bg2);border:2px solid var(--dim);padding:16px;margin-bottom:14px}
+.dm-sec-ttl{font-family:var(--font-px);font-size:8px;color:var(--purple);margin-bottom:10px;letter-spacing:1px}
+.dm-sec-desc{font-size:10px;color:var(--text-dim);line-height:1.6;margin-bottom:12px}
+.dm-btns{display:flex;gap:10px;flex-wrap:wrap}
+.dm-btns .btn{flex:1;min-width:120px;padding:11px;font-size:8px;text-align:center}
+.dm-status{font-size:10px;color:var(--text-dim);margin-top:10px;line-height:1.5}
+.dm-status strong{color:var(--yellow)}
+
+/* COURSE PRESET */
+.course-presets{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.course-preset-btn{
+  font-family:var(--font-mono);font-size:11px;padding:5px 9px;
+  background:var(--bg);border:1px solid var(--dim);color:var(--text-dim);cursor:pointer;
+}
+.course-preset-btn:hover{border-color:var(--green);color:var(--green)}
+
+/* SAVE WALK PROMPT */
+.walk-save-prompt{background:var(--bg2);border:2px solid var(--blue);box-shadow:var(--glow-b);padding:18px;margin-bottom:14px}
+.walk-save-ttl{font-family:var(--font-px);font-size:8px;color:var(--blue);margin-bottom:10px}
+.walk-save-txt{font-size:11px;color:var(--text-dim);line-height:1.6;margin-bottom:14px}
+.walk-save-btns{display:flex;gap:10px;flex-wrap:wrap}
+.walk-save-btns .btn{flex:1;min-width:140px;padding:11px;font-size:7px}
+
+/* CONFIRM */
+.confirm-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:1100;align-items:center;justify-content:center;padding:14px}
+.confirm-ov.open{display:flex}
+.confirm-box{background:var(--bg2);border:2px solid var(--red);box-shadow:var(--glow-r);padding:26px;max-width:380px;width:100%;text-align:center}
+.confirm-ttl{font-family:var(--font-px);font-size:9px;color:var(--red);margin-bottom:12px}
+.confirm-txt{font-size:11px;color:var(--text-dim);margin-bottom:20px;line-height:1.7}
+.confirm-btns{display:flex;gap:10px}
+.confirm-btns .btn{flex:1;padding:11px;font-size:7px}
+
+/* TOAST */
+.toast{
+  position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(90px);
+  background:var(--bg2);border:2px solid var(--green);box-shadow:var(--glow-g);
+  padding:11px 22px;font-family:var(--font-px);font-size:8px;color:var(--green);
+  z-index:2000;transition:transform .28s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;max-width:90vw;
+}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ANIMS */
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes flicker{0%,93%,100%{opacity:1}94%{opacity:.75}95%{opacity:1}97%{opacity:.88}}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--dim)}
+
+@media(max-width:600px){
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+  .games-grid{grid-template-columns:1fr}
+  .oc-totals{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="h-title">⛳ FAIRWAY LAB</div>
+    <div class="h-sub">GOLF PRACTICE TRACKER v3.1 &nbsp;<span class="cursor"></span></div>
+    <div class="glow-line"></div>
+  </header>
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="games"     onclick="switchTab('games')">MINI GAMES</button>
+    <button class="tab-btn"        data-tab="progress"  onclick="switchTab('progress')">PROGRESS</button>
+    <button class="tab-btn"        data-tab="focuses"   onclick="switchTab('focuses')">FOCUSES</button>
+    <button class="tab-btn"        data-tab="oncourse"  onclick="switchTab('oncourse')">ON COURSE</button>
+  </nav>
+  <div id="banner-slot"></div>
+  <div id="content"></div>
+</div>
+
+<!-- GAME MODAL -->
+<div class="modal-ov" id="modal">
+  <div class="modal-box">
+    <div class="modal-titlebar">
+      <div class="modal-gtitle" id="modal-gtitle">GAME</div>
+      <button class="modal-close" onclick="closeModal()">✕ CLOSE</button>
+    </div>
+    <div class="modal-stabs">
+      <button class="modal-stab active" id="stab-rules" onclick="switchModalTab('rules')">RULES & SCORING</button>
+      <button class="modal-stab" id="stab-log" onclick="switchModalTab('log')">► LOG SESSION</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- HOLE ENTRY MODAL -->
+<div class="modal-ov" id="hole-modal">
+  <div class="modal-box">
+    <div class="modal-titlebar">
+      <div class="modal-gtitle" id="hole-modal-ttl">HOLE</div>
+      <button class="modal-close" onclick="closeHoleModal()">✕ CLOSE</button>
+    </div>
+    <div class="modal-body" id="hole-modal-body"></div>
+  </div>
+</div>
+
+<!-- DATA MGMT MODAL -->
+<div class="modal-ov" id="data-modal">
+  <div class="modal-box">
+    <div class="modal-titlebar">
+      <div class="modal-gtitle" style="color:var(--purple)">💾 DATA MANAGEMENT</div>
+      <button class="modal-close" onclick="closeDataModal()">✕ CLOSE</button>
+    </div>
+    <div class="modal-body" id="data-modal-body"></div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="confirm-ov" id="confirm-modal">
+  <div class="confirm-box">
+    <div class="confirm-ttl" id="confirm-ttl">⚠ CONFIRM ACTION</div>
+    <div class="confirm-txt" id="confirm-txt">Are you sure?</div>
+    <div class="confirm-btns">
+      <button class="btn btn-secondary" onclick="closeConfirm()">CANCEL</button>
+      <button class="btn btn-danger" id="confirm-yes" onclick="confirmAction()">CONFIRM</button>
+    </div>
+  </div>
+</div>
+
+<!-- HIDDEN FILE INPUT FOR IMPORT -->
+<input type="file" id="import-input" accept=".json,application/json" style="display:none" onchange="handleImportFile(event)">
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===================================================
+   SCHEMA VERSION
+=================================================== */
+const SCHEMA_VERSION = 1;
+
+/* ===================================================
+   GAME CONFIG
+=================================================== */
+const GAMES = {
+  'fairway-finder':{
+    name:'FAIRWAY FINDER',emoji:'🏌️',desc:'DRIVING — 20 drives, hit the corridor + distance bonus',max:120,
+    benchmarks:{work:45,solid:65,excellent:80},
+    subStats:[
+      {key:'longDrives',label:'DRIVES OVER 250 YDS (BONUS +1 EACH)',type:'number',min:0,max:20}
+    ]
+  },
+  'strike-lab':{
+    name:'STRIKE LAB',emoji:'⛳',desc:'IRONS — 15 shots, pure strikes',max:75,
+    benchmarks:{work:35,solid:50,excellent:63},subStats:[]
+  },
+  'dead-yardage':{
+    name:'DEAD YARDAGE',emoji:'🎯',desc:'WEDGES — 15 shots to 3 yardages',max:75,
+    benchmarks:{work:35,solid:50,excellent:63},
+    subStats:[{key:'yardages',label:'YARDAGES USED',type:'text',placeholder:'e.g. 50, 75, 100 yds'}]
+  },
+  'putting':{
+    name:'3-RANGE PUTTING',emoji:'🕳️',desc:'PUTTING — Long/mid/short + mandatory 3-footer',max:70,
+    benchmarks:{work:28,solid:38,excellent:52},
+    subStats:[
+      {key:'shortMakes',label:'SHORT MAKES (of 6)',type:'number',min:0,max:6},
+      {key:'mediumMakes',label:'MEDIUM MAKES (of 5)',type:'number',min:0,max:5}
+    ]
+  },
+  'up-done':{
+    name:'UP & DONE',emoji:'🏖️',desc:'CHIPPING — 8 chip-then-putt holes',max:48,
+    benchmarks:{work:14,solid:22,excellent:32},
+    subStats:[{key:'upAndDowns',label:'UP & DOWNS MADE (of 8)',type:'number',min:0,max:8}]
+  },
+  'walk':{
+    name:'3-4 HOLE WALK',emoji:'🚶',desc:'FIELD PRACTICE — open-ended hole-by-hole reps',max:100,
+    benchmarks:{work:45,solid:60,excellent:75},
+    subStats:[],
+    isField:true
+  }
+};
+const GAME_IDS = Object.keys(GAMES);
+
+/* Walk game category weights (sum to 1.0) — approach + chip = 50% combined */
+const WALK_WEIGHTS = {
+  approach: 0.25,
+  chip:     0.25,
+  ud:       0.20,
+  putt:     0.15,
+  tee:      0.15
+};
+/* Minimum reps to score each walk category */
+const WALK_MIN_REPS = {
+  approach: 3,
+  chip:     3,
+  putt:     3,
+  ud:       2,  // missed-green opportunities
+  tee:      2   // holes played
+};
+
+/* ===================================================
+   RULES HTML
+=================================================== */
+const RULES_HTML = {
+  'fairway-finder':`
+    <div class="rules-sec">
+      <div class="rules-ttl">20 DRIVES — MAX 120 PTS</div>
+      <div class="rules-row"><span>Dead center (within 10 yds of center line)</span><span class="rpts">5 pts</span></div>
+      <div class="rules-row"><span>Fairway corridor (inside the cones)</span><span class="rpts">3 pts</span></div>
+      <div class="rules-row"><span>Slight miss (edge of rough)</span><span class="rpts">1 pt</span></div>
+      <div class="rules-row"><span>Clear miss</span><span class="rpts">0 pts</span></div>
+      <div class="rules-row"><span>OB simulated (beyond far rough marker)</span><span class="rpts neg">−2 pts</span></div>
+      <div class="rules-row"><span>BONUS: Drive carries over 250 yds</span><span class="rpts bonus">+1 pt</span></div>
+    </div>
+    <div class="rules-sec">
+      <div class="rules-ttl">SETUP</div>
+      <div class="rules-note">Use cones or range targets to define a fairway corridor (~30 yds wide). Dead center = within 10 yds of center line. OB = beyond extreme left/right marker. Hit all 20 drives in sequence, no re-hits. Track distance honestly — the +1 bonus rewards hitting the corridor with real swing speed, not just tickling it down the middle.</div>
+    </div>`,
+  'strike-lab':`
+    <div class="rules-sec">
+      <div class="rules-ttl">15 IRON SHOTS — MAX 75 PTS</div>
+      <div class="rules-row"><span>Pure strike + ball finishes inside 15 yds of target</span><span class="rpts">5 pts</span></div>
+      <div class="rules-row"><span>Pure strike, ball finishes outside target circle</span><span class="rpts">3 pts</span></div>
+      <div class="rules-row"><span>Thin or fat strike, but lands on target</span><span class="rpts">2 pts</span></div>
+      <div class="rules-row"><span>Poor strike + misses target</span><span class="rpts">0 pts</span></div>
+    </div>
+    <div class="rules-sec">
+      <div class="rules-ttl">SETUP</div>
+      <div class="rules-note">Pick a target at your normal iron distance. Use alignment sticks or towels to define a 15-yd radius circle. Pure strike = ball-first contact with compression through impact, clean divot after ball position.</div>
+    </div>`,
+  'dead-yardage':`
+    <div class="rules-sec">
+      <div class="rules-ttl">15 SHOTS — 5 PER YARDAGE — MAX 75 PTS</div>
+      <div class="rules-row"><span>Finishes inside 2 yds of target</span><span class="rpts">5 pts</span></div>
+      <div class="rules-row"><span>Finishes 2–4 yds from target</span><span class="rpts">4 pts</span></div>
+      <div class="rules-row"><span>Finishes 4–7 yds from target</span><span class="rpts">3 pts</span></div>
+      <div class="rules-row"><span>Finishes 7–10 yds from target</span><span class="rpts">2 pts</span></div>
+      <div class="rules-row"><span>Outside 10 yds</span><span class="rpts">0 pts</span></div>
+    </div>
+    <div class="rules-sec">
+      <div class="rules-ttl">SETUP</div>
+      <div class="rules-note">Choose 3 yardages covering your scoring zone (e.g. 50, 75, 100 yds). Hit 5 shots at each. Log the yardages used — consistency of target selection is part of the drill. Rotate yardages each session.</div>
+    </div>`,
+  'putting':`
+    <div class="rules-sec">
+      <div class="rules-ttl">LONG PUTTS — 4 PUTTS (25–35 FT) — MAX 12 PTS</div>
+      <div class="rules-row"><span>Ball finishes inside 24 inches</span><span class="rpts">3 pts</span></div>
+      <div class="rules-row"><span>Ball finishes inside 36 inches</span><span class="rpts">1 pt</span></div>
+      <div class="rules-row"><span>Outside 36 inches</span><span class="rpts">0 pts</span></div>
+    </div>
+    <div class="rules-sec">
+      <div class="rules-ttl">MEDIUM PUTTS — 5 PUTTS (12–18 FT) — MAX 25 PTS</div>
+      <div class="rules-row"><span>Make the putt</span><span class="rpts">5 pts</span></div>
+      <div class="rules-row"><span>Tap-in leave (&lt;18 in from hole)</span><span class="rpts">2 pts</span></div>
+      <div class="rules-row"><span>Miss</span><span class="rpts">0 pts</span></div>
+    </div>
+    <div class="rules-sec">
+      <div class="rules-ttl">SHORT PUTTS — 6 PUTTS (4–6 FT) — MAX 24 PTS</div>
+      <div class="rules-row"><span>Make the putt</span><span class="rpts">4 pts</span></div>
+      <div class="rules-row"><span>Miss</span><span class="rpts">0 pts</span></div>
+    </div>
+    <div class="rules-sec">
+      <div class="rules-ttl">MANDATORY 3-FOOTER (AT END)</div>
+      <div class="rules-row"><span>Make it — no penalty</span><span class="rpts">0 pts</span></div>
+      <div class="rules-row"><span>Miss it — penalty applied</span><span class="rpts neg">−5 pts</span></div>
+    </div>
+    <div class="rules-note">Track short makes (of 6) and medium makes (of 5) as sub-stats for trend analysis. The 3-footer is non-negotiable — this simulates clutch pressure scoring.</div>`,
+  'up-done':`
+    <div class="rules-sec">
+      <div class="rules-ttl">8 CHIP-THEN-PUTT HOLES — MAX 48 PTS</div>
+      <div class="rules-row"><span>Chip-in (hole out from off green)</span><span class="rpts">6 pts</span></div>
+      <div class="rules-row"><span>Up & Done (chip + 1-putt)</span><span class="rpts">4 pts</span></div>
+      <div class="rules-row"><span>2-putt after chip</span><span class="rpts">1 pt</span></div>
+      <div class="rules-row"><span>3+ putts after chip</span><span class="rpts">0 pts</span></div>
+    </div>
+    <div class="rules-sec">
+      <div class="rules-ttl">SETUP</div>
+      <div class="rules-note">Chip from various lies (fairway cut, rough, tight lie) within 30 yds of hole. Set up 8 different locations around the green. Chip first, then finish the putt — no gimmes. Track how many up-and-dones (4-pt outcomes) you complete as your key sub-stat.</div>
+    </div>`,
+  'walk':`
+    <div class="rules-sec">
+      <div class="rules-ttl">FIELD PRACTICE — PERCENTAGE-BASED SCORING</div>
+      <div class="rules-note" style="margin-top:0">An open-ended on-course practice game. Walk any number of holes (start, log hole-by-hole, end whenever light or pace dies). First-ball outcomes count as primary; bonus reps build practice volume on approach, chip, and putt without polluting your real-game stats.</div>
+    </div>
+    <div class="rules-sec">
+      <div class="rules-ttl">FIVE SCORED CATEGORIES</div>
+      <div class="rules-row"><span>APPROACH — % of approach reps inside 30 ft (incl. bonus)</span><span class="rpts">25%</span></div>
+      <div class="rules-row"><span>CHIP — % of chip reps inside 10 ft (incl. bonus)</span><span class="rpts">25%</span></div>
+      <div class="rules-row"><span>UP & DOWN — % converted on missed greens (first ball)</span><span class="rpts">20%</span></div>
+      <div class="rules-row"><span>PUTT — % of putts holed inside 6 ft (first ball)</span><span class="rpts">15%</span></div>
+      <div class="rules-row"><span>TEE SHOT — % fairway+ or light rough (first ball)</span><span class="rpts">15%</span></div>
+    </div>
+    <div class="rules-sec">
+      <div class="rules-ttl">SAMPLE SIZE THRESHOLDS</div>
+      <div class="rules-row"><span>Approach / Chip / Putt</span><span class="rpts">3+ reps</span></div>
+      <div class="rules-row"><span>Up & Down</span><span class="rpts">2+ misses</span></div>
+      <div class="rules-row"><span>Tee shot</span><span class="rpts">2+ holes</span></div>
+      <div class="rules-note">Categories below the threshold are excluded from the composite. Composite is reweighted across qualifying categories only — small sessions still get a fair score.</div>
+    </div>
+    <div class="rules-sec">
+      <div class="rules-ttl">SAVE TO PERFORMANCE</div>
+      <div class="rules-note" style="margin-top:0">At session end, choose whether to save first-ball stats as a CASUAL WALK in your On Course log. Bonus reps stay only in the Walk record — performance trends pull only from primary shots. Incomplete holes don't save.</div>
+    </div>`
+};
+
+/* ===================================================
+   STATE
+=================================================== */
+let state = {
+  practiceSessions: [],   // existing fairway-lab-v3 sessions (range games + walk)
+  rounds: [],             // new on-course rounds + casual walks
+  lastBackup: null,       // ISO timestamp of last export
+  bannerDismissedAt: 0    // counter value when last dismissed
+};
+let currentTab = 'games';
+let filterGame = 'all';
+let modalGameId = null;
+let modalSubTab = 'rules';
+let delConfirmId = null;
+let audioCtx = null;
+
+/* On-course in-progress round */
+let activeRound = null;
+let editingHoleNumber = null;
+let holeDraft = null;
+
+/* Walk-in-progress session */
+let activeWalk = null;
+let editingWalkHole = null;
+let walkDraft = null;
+
+/* Pending confirm action */
+let pendingConfirm = null;
+
+/* Walk-end pending live score (for save prompt buttons) */
+let pendingWalkLive = null;
+
+/* ===================================================
+   STORAGE
+=================================================== */
+const PRACTICE_KEY = 'fairway-lab-v3';
+const ROUNDS_KEY = 'fairway-lab-rounds-v1';
+const META_KEY = 'fairway-lab-meta-v1';
+const ACTIVE_ROUND_KEY = 'fairway-lab-active-round';
+const ACTIVE_WALK_KEY = 'fairway-lab-active-walk';
+
+function loadData(){
+  try{const r=localStorage.getItem(PRACTICE_KEY);if(r)state.practiceSessions=JSON.parse(r)}catch(e){state.practiceSessions=[]}
+  try{const r=localStorage.getItem(ROUNDS_KEY);if(r)state.rounds=JSON.parse(r)}catch(e){state.rounds=[]}
+  try{
+    const r=localStorage.getItem(META_KEY);
+    if(r){const m=JSON.parse(r);state.lastBackup=m.lastBackup||null;state.bannerDismissedAt=m.bannerDismissedAt||0;}
+  }catch(e){}
+  try{const r=localStorage.getItem(ACTIVE_ROUND_KEY);if(r)activeRound=JSON.parse(r)}catch(e){activeRound=null}
+  try{const r=localStorage.getItem(ACTIVE_WALK_KEY);if(r)activeWalk=JSON.parse(r)}catch(e){activeWalk=null}
+}
+function savePractice(){localStorage.setItem(PRACTICE_KEY,JSON.stringify(state.practiceSessions))}
+function saveRounds(){localStorage.setItem(ROUNDS_KEY,JSON.stringify(state.rounds))}
+function saveMeta(){localStorage.setItem(META_KEY,JSON.stringify({lastBackup:state.lastBackup,bannerDismissedAt:state.bannerDismissedAt}))}
+function saveActiveRound(){if(activeRound)localStorage.setItem(ACTIVE_ROUND_KEY,JSON.stringify(activeRound));else localStorage.removeItem(ACTIVE_ROUND_KEY)}
+function saveActiveWalk(){if(activeWalk)localStorage.setItem(ACTIVE_WALK_KEY,JSON.stringify(activeWalk));else localStorage.removeItem(ACTIVE_WALK_KEY)}
+
+/* ===================================================
+   AUDIO (8-bit square wave)
+=================================================== */
+function playSound(type){
+  try{
+    if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();
+    osc.connect(gain);gain.connect(audioCtx.destination);osc.type='square';
+    const map={click:440,save:880,delete:220,error:110,tab:330,gen:550};
+    osc.frequency.value=map[type]||440;
+    gain.gain.setValueAtTime(0.04,audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.12);
+    osc.start(audioCtx.currentTime);osc.stop(audioCtx.currentTime+0.12);
+    if(type==='save'){
+      const osc2=audioCtx.createOscillator();osc2.connect(gain);
+      osc2.type='square';osc2.frequency.value=1320;
+      osc2.start(audioCtx.currentTime+0.1);osc2.stop(audioCtx.currentTime+0.22);
+    }
+  }catch(e){}
+}
+
+/* ===================================================
+   HELPERS
+=================================================== */
+function uuid(){return Date.now().toString(36)+Math.random().toString(36).substr(2,6)}
+function fmtDate(iso){
+  const d=new Date(iso);
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'})
+    +' '+d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
+}
+function fmtDateShort(iso){
+  const d=new Date(iso);
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'});
+}
+function daysSince(iso){
+  if(!iso)return null;
+  return Math.floor((Date.now()-new Date(iso).getTime())/(1000*60*60*24));
+}
+function getPct(gid,score){return score/GAMES[gid].max*100}
+function getGrade(gid,score){
+  const b=GAMES[gid].benchmarks;
+  if(score>=b.excellent)return{label:'EXCELLENT',cls:'grade-excellent'};
+  if(score>=b.solid)    return{label:'SOLID',    cls:'grade-solid'};
+  if(score>=b.work)     return{label:'OK',       cls:'grade-ok'};
+  return                      {label:'WORK',     cls:'grade-work'};
+}
+function getLastN(gid,n){return state.practiceSessions.filter(s=>s.gameId===gid).slice(0,n)}
+function getAvgPct(gid){
+  const last=getLastN(gid,5);
+  if(!last.length)return null;
+  return last.reduce((s,x)=>s+x.score,0)/last.length/GAMES[gid].max*100;
+}
+function getSolidStreak(){
+  const src=filterGame==='all'?state.practiceSessions:state.practiceSessions.filter(s=>s.gameId===filterGame);
+  let n=0;for(const s of src){if(s.score>=GAMES[s.gameId].benchmarks.solid)n++;else break;}return n;
+}
+function getStrongestGame(){
+  let best=null,bp=-1;
+  GAME_IDS.forEach(gid=>{const p=getAvgPct(gid);if(p!==null&&p>bp){bp=p;best=gid;}});
+  return best;
+}
+function getFilteredSessions(){
+  return filterGame==='all'?state.practiceSessions:state.practiceSessions.filter(s=>s.gameId===filterGame);
+}
+function getOverallAvgPct(){
+  const src=getFilteredSessions();if(!src.length)return null;
+  return(src.reduce((a,s)=>a+getPct(s.gameId,s.score),0)/src.length).toFixed(1);
+}
+function totalLoggedSessions(){
+  return state.practiceSessions.length+state.rounds.length;
+}
+
+/* ===================================================
+   ROUTING
+=================================================== */
+function switchTab(tab){
+  playSound('tab');currentTab=tab;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  renderContent();
+}
+function renderContent(){
+  renderBackupBanner();
+  const el=document.getElementById('content');
+  if(currentTab==='games')        el.innerHTML=renderGamesTab();
+  else if(currentTab==='progress'){el.innerHTML=renderProgressTab();requestAnimationFrame(drawChart);}
+  else if(currentTab==='focuses') el.innerHTML=renderFocusesTab();
+  else if(currentTab==='oncourse')el.innerHTML=renderOnCourseTab();
+}
+
+/* ===================================================
+   BACKUP BANNER
+=================================================== */
+function renderBackupBanner(){
+  const slot=document.getElementById('banner-slot');
+  const total=totalLoggedSessions();
+  const since=state.lastBackup?daysSince(state.lastBackup):null;
+  // Trigger banner every 5 sessions past dismissal point
+  const sinceDismiss=total-state.bannerDismissedAt;
+  const showByCount=sinceDismiss>=5;
+  const showByTime=since!==null&&since>=14;
+  const neverBacked=state.lastBackup===null&&total>=5;
+  if(showByCount||showByTime||neverBacked){
+    let msg;
+    if(neverBacked)msg=`You've logged ${total} sessions and have never exported a backup.`;
+    else if(showByTime)msg=`Last backup: ${since} days ago. Time to export.`;
+    else msg=`${sinceDismiss} new sessions since your last backup nudge.`;
+    slot.innerHTML=`
+      <div class="backup-banner">
+        <span style="font-size:18px">💾</span>
+        <span class="backup-banner-msg">${msg}</span>
+        <button class="backup-banner-btn" onclick="openDataModal()">EXPORT</button>
+        <button class="backup-banner-x" onclick="dismissBanner()" title="dismiss">✕</button>
+      </div>`;
+  }else{slot.innerHTML='';}
+}
+function dismissBanner(){
+  state.bannerDismissedAt=totalLoggedSessions();
+  saveMeta();renderBackupBanner();
+}
+
+/* ===================================================
+   GAMES TAB
+=================================================== */
+function renderGamesTab(){
+  return '<div class="games-grid">'+GAME_IDS.map(gid=>{
+    const g=GAMES[gid];
+    const ap=getAvgPct(gid);
+    const cnt=getLastN(gid,5).length;
+    const disp=ap!==null?ap.toFixed(1)+'%':'-- %';
+    const bw=ap!==null?Math.min(100,ap):0;
+    const logHandler=g.isField?`event.stopPropagation();startWalk()`:`event.stopPropagation();openModal('${gid}','log')`;
+    const cardHandler=g.isField?`startWalk()`:`openModal('${gid}','rules')`;
+    return `<div class="game-card" onclick="${cardHandler}">
+      <div class="card-header"><span class="card-emoji">${g.emoji}</span><span class="card-name">${g.name}</span></div>
+      <div class="card-desc">${g.desc}</div>
+      <div class="card-avg-label">LAST ${cnt||0} SESSION AVG</div>
+      <div class="card-avg-val">${disp}</div>
+      <div class="avg-bar"><div class="avg-bar-fill" style="width:${bw}%"></div></div>
+      <div class="card-btns">
+        <button class="btn btn-secondary" onclick="event.stopPropagation();openModal('${gid}','rules')">RULES</button>
+        <button class="btn btn-primary"   onclick="${logHandler}">${g.isField?'START WALK':'LOG SCORE'}</button>
+      </div>
+    </div>`;
+  }).join('')+'</div>';
+}
+
+/* ===================================================
+   GAME MODAL (rules + log for range games)
+=================================================== */
+function openModal(gid,sub='rules'){
+  playSound('click');modalGameId=gid;modalSubTab=sub;
+  const g=GAMES[gid];
+  document.getElementById('modal-gtitle').innerHTML=g.emoji+' '+g.name;
+  document.getElementById('modal').classList.add('open');
+  // Walk doesn't get a log tab via modal — it has its own session flow
+  const stabLog=document.getElementById('stab-log');
+  if(g.isField){stabLog.style.display='none';modalSubTab='rules';}
+  else{stabLog.style.display='';}
+  document.getElementById('stab-rules').classList.toggle('active',modalSubTab==='rules');
+  stabLog.classList.toggle('active',modalSubTab==='log');
+  renderModalBody();
+}
+function closeModal(){
+  playSound('click');
+  document.getElementById('modal').classList.remove('open');
+  modalGameId=null;
+}
+function switchModalTab(tab){
+  playSound('click');modalSubTab=tab;
+  document.getElementById('stab-rules').classList.toggle('active',tab==='rules');
+  document.getElementById('stab-log').classList.toggle('active',tab==='log');
+  renderModalBody();
+}
+function renderModalBody(){
+  const el=document.getElementById('modal-body');
+  if(modalSubTab==='rules'){el.innerHTML=RULES_HTML[modalGameId]||'<p>Rules not available.</p>';}
+  else{el.innerHTML=buildLogForm(modalGameId);}
+}
+function buildLogForm(gid){
+  const g=GAMES[gid];const b=g.benchmarks;
+  const subFields=g.subStats.map(ss=>{
+    const inp=ss.type==='number'
+      ?`<input type="number" id="ss-${ss.key}" min="${ss.min!==undefined?ss.min:0}" ${ss.max!==undefined?'max="'+ss.max+'"':''} placeholder="0">`
+      :`<input type="text" id="ss-${ss.key}" placeholder="${ss.placeholder||''}">`;
+    return `<div class="field"><label>${ss.label}</label>${inp}</div>`;
+  }).join('');
+  return `<div class="log-form">
+    <div class="field">
+      <label>SCORE (0 – ${g.max} PTS MAX)</label>
+      <input type="number" id="log-score" min="0" max="${g.max}" placeholder="Enter your score">
+    </div>
+    ${subFields}
+    <div class="field">
+      <label>SESSION NOTES (OPTIONAL)</label>
+      <textarea id="log-notes" placeholder="Key observations, conditions, feel..."></textarea>
+    </div>
+    <div class="bm-row">
+      <span class="bm-chip bm-work">WORK &lt;${b.work}</span>
+      <span class="bm-chip bm-ok">OK ${b.work}–${b.solid-1}</span>
+      <span class="bm-chip bm-solid">SOLID ${b.solid}–${b.excellent-1}</span>
+      <span class="bm-chip bm-excellent">EXCELLENT ${b.excellent}+</span>
+    </div>
+    <button class="btn-save" onclick="submitLog('${gid}')">► SAVE SESSION</button>
+    <div class="err-msg" id="log-err"></div>
+  </div>`;
+}
+function submitLog(gid){
+  const scoreEl=document.getElementById('log-score');
+  const score=parseInt(scoreEl.value);
+  const g=GAMES[gid];
+  if(isNaN(score)||score<0||score>g.max){
+    playSound('error');
+    document.getElementById('log-err').textContent='⚠ SCORE MUST BE 0 – '+g.max;
+    return;
+  }
+  const subStats={};
+  g.subStats.forEach(ss=>{
+    const el=document.getElementById('ss-'+ss.key);
+    if(el)subStats[ss.key]=ss.type==='number'?parseInt(el.value)||0:el.value;
+  });
+  const notes=(document.getElementById('log-notes').value||'').trim();
+  state.practiceSessions.unshift({id:uuid(),gameId:gid,score,date:new Date().toISOString(),notes,subStats});
+  savePractice();
+  playSound('save');
+  closeModal();
+  showToast('SESSION SAVED — '+score+'/'+g.max+' ('+getPct(gid,score).toFixed(1)+'%)');
+  renderContent();
+}
+
+/* ===================================================
+   PROGRESS TAB
+=================================================== */
+function renderProgressTab(){
+  const filterBtns=['all',...GAME_IDS].map(gid=>{
+    const lbl=gid==='all'?'ALL GAMES':GAMES[gid].emoji+' '+GAMES[gid].name.split(' ').slice(0,2).join(' ');
+    return`<button class="filter-btn${filterGame===gid?' active':''}" onclick="setFilter('${gid}')">${lbl}</button>`;
+  }).join('');
+  const total=getFilteredSessions().length;
+  const avgPct=getOverallAvgPct();
+  const streak=getSolidStreak();
+  const strong=getStrongestGame();
+  const src=getFilteredSessions();
+  const items=src.map(s=>{
+    const g=GAMES[s.gameId];
+    const pct=getPct(s.gameId,s.score);
+    const grade=getGrade(s.gameId,s.score);
+    let sub='';
+    if(s.gameId==='putting'&&s.subStats){
+      const sm=s.subStats.shortMakes;const mm=s.subStats.mediumMakes;
+      if(sm!==undefined&&!isNaN(sm))sub+='SHORT: '+sm+'/6 ';
+      if(mm!==undefined&&!isNaN(mm))sub+='MED: '+mm+'/5';
+    }
+    if(s.gameId==='up-done'&&s.subStats?.upAndDowns!==undefined)
+      sub='UP&DOWNS: '+s.subStats.upAndDowns+'/8';
+    if(s.gameId==='dead-yardage'&&s.subStats?.yardages)
+      sub='YARDS: '+s.subStats.yardages;
+    if(s.gameId==='fairway-finder'&&s.subStats?.longDrives!==undefined&&s.subStats.longDrives>0)
+      sub='250+ YDS: '+s.subStats.longDrives;
+    if(s.gameId==='walk'&&s.walkData){
+      const w=s.walkData;
+      sub='HOLES: '+w.holesPlayed;
+      if(w.savedToOnCourse)sub+=' · SAVED TO ON COURSE';
+    }
+    return`<div class="sitem ${grade.cls}">
+      <span class="sitem-emoji">${g.emoji}</span>
+      <div class="sitem-info">
+        <div class="sitem-name">${g.name}</div>
+        <div class="sitem-date">${fmtDate(s.date)}</div>
+        ${sub?`<div class="sitem-sub">${sub.trim()}</div>`:''}
+        ${s.notes?`<div class="sitem-notes">"${s.notes}"</div>`:''}
+      </div>
+      <div class="sitem-right">
+        <div class="grade-badge ${grade.cls}">${grade.label}</div>
+        <div class="sitem-score">${s.score}</div>
+        <div class="sitem-pct">${pct.toFixed(1)}%</div>
+        <button class="btn btn-danger" onclick="promptDeleteSession('${s.id}')">DEL</button>
+      </div>
+    </div>`;
+  }).join('');
+  return`
+    <div class="filter-row">${filterBtns}</div>
+    <div class="stats-row">
+      <div class="stat-box"><div class="stat-val">${total}</div><div class="stat-lbl">TOTAL SESSIONS</div></div>
+      <div class="stat-box"><div class="stat-val">${avgPct!==null?avgPct+'%':'--'}</div><div class="stat-lbl">AVG SCORE %</div></div>
+      <div class="stat-box"><div class="stat-val">${streak}</div><div class="stat-lbl">SOLID STREAK</div></div>
+      <div class="stat-box"><div class="stat-val">${strong?GAMES[strong].emoji:'--'}</div><div class="stat-lbl">STRONGEST GAME</div></div>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-ttl">SCORE % OVER TIME — ${filterGame==='all'?'ALL GAMES':GAMES[filterGame].name}</div>
+      <svg id="chart-svg" height="180" style="width:100%"></svg>
+    </div>
+    <div class="slog-ttl">SESSION LOG (${src.length})</div>
+    ${src.length?items:'<div class="no-data">NO SESSIONS LOGGED YET<br><br>HIT LOG SCORE ON ANY<br>GAME CARD TO START</div>'}`;
+}
+function setFilter(gid){filterGame=gid;renderContent()}
+
+/* ===================================================
+   CHART
+=================================================== */
+function drawChart(){
+  const svg=document.getElementById('chart-svg');if(!svg)return;
+  const filtered=[...getFilteredSessions()].reverse();
+  if(filtered.length<2){
+    svg.innerHTML=`<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#333" font-size="8" font-family="'Press Start 2P',monospace">${filtered.length===0?'NO DATA YET':'LOG MORE SESSIONS TO SEE TREND'}</text>`;
+    return;
+  }
+  const W=svg.clientWidth||600,H=180;
+  const pl=46,pr=62,pt=12,pb=30;
+  const iw=W-pl-pr,ih=H-pt-pb;
+  const pts=filtered.map((s,i)=>{
+    const pct=getPct(s.gameId,s.score);
+    return{x:pl+(i/(filtered.length-1))*iw,y:pt+(1-pct/100)*ih,pct,date:s.date};
+  });
+  const solidPct=filterGame!=='all'?(GAMES[filterGame].benchmarks.solid/GAMES[filterGame].max*100):65;
+  const solidY=(pt+(1-solidPct/100)*ih).toFixed(1);
+  const recent=pts.slice(-3),older=pts.length>3?pts.slice(-6,-3):[];
+  const rAvg=recent.reduce((a,p)=>a+p.pct,0)/recent.length;
+  const oAvg=older.length?older.reduce((a,p)=>a+p.pct,0)/older.length:rAvg-0.1;
+  const lc=rAvg>=oAvg?'#39ff14':'#ffe600';
+  const grid=[0,25,50,75,100].map(p=>{
+    const y=(pt+(1-p/100)*ih).toFixed(1);
+    return`<line x1="${pl}" y1="${y}" x2="${W-pr}" y2="${y}" stroke="#191919" stroke-width="1"/>
+      <text x="${pl-4}" y="${y}" dy="4" text-anchor="end" fill="#444" font-size="8" font-family="DM Mono,monospace">${p}%</text>`;
+  }).join('');
+  const pathD=pts.map((p,i)=>`${i===0?'M':'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  const d1=new Date(filtered[0].date).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  const d2=new Date(filtered[filtered.length-1].date).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  svg.innerHTML=`
+    ${grid}
+    <line x1="${pl}" y1="${solidY}" x2="${W-pr}" y2="${solidY}" stroke="#ffe600" stroke-dasharray="8,4" stroke-width="1.5" opacity=".7"/>
+    <text x="${W-pr+5}" y="${solidY}" dy="4" fill="#ffe600" font-size="7" font-family="'Press Start 2P',monospace">SOLID</text>
+    <path d="${pathD}" fill="none" stroke="${lc}" stroke-width="2.5" style="filter:drop-shadow(0 0 5px ${lc})"/>
+    ${pts.map(p=>`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4.5" fill="${lc}" style="filter:drop-shadow(0 0 5px ${lc})"/>`).join('')}
+    <text x="${pl}" y="${H-4}" fill="#3a3a3a" font-size="8" font-family="DM Mono,monospace">${d1}</text>
+    <text x="${W-pr}" y="${H-4}" text-anchor="end" fill="#3a3a3a" font-size="8" font-family="DM Mono,monospace">${d2}</text>`;
+}
+window.addEventListener('resize',()=>{if(currentTab==='progress')drawChart()});
+
+/* ===================================================
+   DELETE SESSION
+=================================================== */
+function promptDeleteSession(id){
+  promptConfirm('⚠ DELETE SESSION?','This action cannot be undone.<br>Remove this session from the log?',()=>{
+    state.practiceSessions=state.practiceSessions.filter(s=>s.id!==id);
+    savePractice();playSound('delete');showToast('SESSION DELETED');renderContent();
+  });
+}
+
+/* ===================================================
+   CONFIRM MODAL
+=================================================== */
+function promptConfirm(title,text,onConfirm){
+  playSound('click');pendingConfirm=onConfirm;
+  document.getElementById('confirm-ttl').innerHTML=title;
+  document.getElementById('confirm-txt').innerHTML=text;
+  document.getElementById('confirm-modal').classList.add('open');
+}
+function closeConfirm(){
+  document.getElementById('confirm-modal').classList.remove('open');
+  pendingConfirm=null;
+}
+function confirmAction(){
+  const fn=pendingConfirm;closeConfirm();
+  if(fn)fn();
+}
+
+/* ===================================================
+   TOAST
+=================================================== */
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent='► '+msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+/* ===================================================
+   ON COURSE TAB
+=================================================== */
+function renderOnCourseTab(){
+  let activeBlock='';
+  if(activeRound){
+    activeBlock=renderActiveRound();
+  }
+  const recent=state.rounds.slice(0,10);
+  const historyBlock=recent.length?recent.map(r=>renderRoundRow(r)).join(''):'<div class="no-data">NO ROUNDS LOGGED YET<br><br>START A SESSION TO BEGIN</div>';
+
+  return`
+    <div class="oc-hdr">⛳ ON COURSE</div>
+    <div class="oc-sub">Track real-round performance hole-by-hole. First-ball stats only — designed for fast capture between holes.</div>
+    ${!activeRound?`<div class="oc-actions">
+      <button class="btn btn-primary" onclick="startRound(9)">▶ NEW 9-HOLE</button>
+      <button class="btn btn-primary" onclick="startRound(18)">▶ NEW 18-HOLE</button>
+      <button class="btn btn-secondary" onclick="startRound(0)">▶ OTHER LENGTH</button>
+    </div>`:''}
+    ${activeBlock}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="slog-ttl" style="margin-bottom:0;border:none;padding:0">ROUND HISTORY (${state.rounds.length})</div>
+      <button class="btn" style="font-size:6px" onclick="openDataModal()">💾 DATA</button>
+    </div>
+    ${historyBlock}
+  `;
+}
+
+function renderActiveRound(){
+  const r=activeRound;
+  const totalScore=r.holes.reduce((a,h)=>a+(h.score||0),0);
+  const totalPutts=r.holes.reduce((a,h)=>a+(h.putts||0),0);
+  const totalPen=r.holes.reduce((a,h)=>a+(h.penalties||0),0);
+  const fwHits=r.holes.filter(h=>h.tee==='fairway').length;
+  const teeAttempts=r.holes.filter(h=>h.tee).length;
+  const fwPct=teeAttempts?Math.round(fwHits/teeAttempts*100):0;
+  const holesComplete=r.holes.length;
+  const targetHoles=r.targetHoles;
+  const holeRows=r.holes.map(h=>`
+    <div class="hole-row complete">
+      <span class="hole-num">H${h.number}</span>
+      <span class="hole-detail">
+        ${h.score?'<strong>'+h.score+'</strong>':'-'} 
+        · ${h.tee==='fairway'?'FW+':h.tee==='light'?'LR':'TR'}
+        ${h.gir?' · GIR':''}
+        ${h.penalties?' · '+h.penalties+'P':''}
+        · ${h.putts}putt
+        ${h.udResult?(' · U&D '+(h.udResult==='converted'?'✓':h.udResult==='holed'?'CHIP-IN':'✗')):''}
+      </span>
+      <button class="hole-edit-btn" onclick="editHole(${h.number})">EDIT</button>
+    </div>`).join('');
+  const nextHole=holesComplete+1;
+  const canAddNext=targetHoles===0||nextHole<=targetHoles;
+
+  return`
+    <div class="oc-active">
+      <div class="oc-active-ttl">▶ ACTIVE ROUND</div>
+      <div class="oc-active-meta">
+        ${r.course||'Unnamed course'} · Started ${fmtDateShort(r.startedAt)}
+        · ${targetHoles===0?'open length':targetHoles+' holes'}
+        · ${holesComplete}/${targetHoles===0?'?':targetHoles} holes logged
+      </div>
+      <div class="oc-totals">
+        <div class="oc-tot"><div class="oc-tot-val">${totalScore||'-'}</div><div class="oc-tot-lbl">SCORE</div></div>
+        <div class="oc-tot"><div class="oc-tot-val">${fwPct}%</div><div class="oc-tot-lbl">FW+</div></div>
+        <div class="oc-tot"><div class="oc-tot-val">${totalPutts}</div><div class="oc-tot-lbl">PUTTS</div></div>
+        <div class="oc-tot"><div class="oc-tot-val">${totalPen}</div><div class="oc-tot-lbl">PENALTIES</div></div>
+      </div>
+      ${holesComplete?`<div class="hole-list">${holeRows}</div>`:''}
+      <div class="oc-end-btns">
+        ${canAddNext?`<button class="btn btn-primary" onclick="openHoleEntry(${nextHole})">▶ LOG HOLE ${nextHole}</button>`:''}
+        <button class="btn btn-secondary" onclick="endRound()">END ROUND</button>
+        <button class="btn btn-danger" onclick="discardRound()">DISCARD</button>
+      </div>
+    </div>`;
+}
+
+function renderRoundRow(r){
+  const totalScore=r.holes.reduce((a,h)=>a+(h.score||0),0);
+  const totalPutts=r.holes.reduce((a,h)=>a+(h.putts||0),0);
+  const totalPen=r.holes.reduce((a,h)=>a+(h.penalties||0),0);
+  const teeAttempts=r.holes.filter(h=>h.tee).length;
+  const fwHits=r.holes.filter(h=>h.tee==='fairway'||h.tee==='light').length;
+  const fwPct=teeAttempts?Math.round(fwHits/teeAttempts*100):0;
+  const tag=r.sessionType==='casual_walk'?'<span style="color:var(--blue);font-family:var(--font-px);font-size:6px">CASUAL WALK</span>':'<span style="color:var(--green);font-family:var(--font-px);font-size:6px">ROUND</span>';
+  return`<div class="sitem">
+    <span class="sitem-emoji">⛳</span>
+    <div class="sitem-info">
+      <div class="sitem-name">${r.course||'UNNAMED'} · ${r.holes.length} HOLES</div>
+      <div class="sitem-date">${fmtDate(r.endedAt||r.startedAt)} · ${tag}</div>
+      <div class="sitem-sub">SCORE ${totalScore} · FW+ ${fwPct}% · ${totalPutts} PUTTS · ${totalPen} PEN</div>
+    </div>
+    <div class="sitem-right">
+      <button class="btn btn-danger" onclick="promptDeleteRound('${r.id}')">DEL</button>
+    </div>
+  </div>`;
+}
+
+function startRound(target){
+  if(activeRound){showToast('FINISH OR DISCARD ACTIVE ROUND FIRST');return;}
+  let length=target;
+  if(target===0){
+    const v=prompt('How many holes? (1-18)','9');
+    length=parseInt(v);
+    if(!length||length<1||length>18){showToast('INVALID LENGTH');return;}
+  }
+  const course=prompt('Course name (optional)','')||'';
+  activeRound={
+    id:uuid(),
+    sessionType:'round',
+    course:course.trim(),
+    targetHoles:length,
+    startedAt:new Date().toISOString(),
+    holes:[],
+    schemaVersion:SCHEMA_VERSION
+  };
+  saveActiveRound();
+  playSound('save');
+  renderContent();
+}
+
+function discardRound(){
+  promptConfirm('⚠ DISCARD ROUND?','All hole entries in this active round will be lost.',()=>{
+    activeRound=null;saveActiveRound();
+    playSound('delete');showToast('ROUND DISCARDED');renderContent();
+  });
+}
+
+function endRound(){
+  if(!activeRound)return;
+  if(!activeRound.holes.length){showToast('LOG AT LEAST ONE HOLE FIRST');return;}
+  activeRound.endedAt=new Date().toISOString();
+  state.rounds.unshift(activeRound);
+  saveRounds();
+  activeRound=null;saveActiveRound();
+  playSound('save');showToast('ROUND SAVED');
+  renderContent();
+}
+
+function promptDeleteRound(id){
+  promptConfirm('⚠ DELETE ROUND?','This action cannot be undone.<br>Remove this round from the log?',()=>{
+    state.rounds=state.rounds.filter(r=>r.id!==id);
+    saveRounds();playSound('delete');showToast('ROUND DELETED');renderContent();
+  });
+}
+
+/* ===================================================
+   HOLE ENTRY MODAL
+=================================================== */
+function openHoleEntry(num){
+  if(!activeRound)return;
+  playSound('click');
+  editingHoleNumber=num;
+  const existing=activeRound.holes.find(h=>h.number===num);
+  holeDraft=existing?JSON.parse(JSON.stringify(existing)):{
+    number:num,score:null,tee:null,penalties:0,gir:null,udOpportunity:null,udResult:null,putts:null
+  };
+  document.getElementById('hole-modal-ttl').innerHTML=`HOLE ${num}`;
+  document.getElementById('hole-modal').classList.add('open');
+  renderHoleEntry();
+}
+
+function editHole(num){openHoleEntry(num)}
+
+function closeHoleModal(){
+  document.getElementById('hole-modal').classList.remove('open');
+  editingHoleNumber=null;holeDraft=null;
+}
+
+function renderHoleEntry(){
+  const d=holeDraft;
+  const showUd=d.gir===false;
+  const showUdResult=d.udOpportunity===true;
+  document.getElementById('hole-modal-body').innerHTML=`
+    <div class="hole-entry">
+      <div class="field">
+        <label>SCORE ON HOLE</label>
+        <div class="num-pad">
+          ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button class="num-btn ${d.score===n?'active':''}" onclick="setHoleField('score',${n})">${n}</button>`).join('')}
+        </div>
+      </div>
+      <div class="field">
+        <label>TEE SHOT RESULT</label>
+        <div class="choice-row">
+          <button class="choice-btn ${d.tee==='fairway'?'active':''}" onclick="setHoleField('tee','fairway')">FAIRWAY+</button>
+          <button class="choice-btn warn ${d.tee==='light'?'active':''}" onclick="setHoleField('tee','light')">LIGHT ROUGH</button>
+          <button class="choice-btn danger ${d.tee==='trouble'?'active':''}" onclick="setHoleField('tee','trouble')">TROUBLE</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>PENALTIES</label>
+        <div class="choice-row">
+          ${[0,1,2,3].map(n=>`<button class="choice-btn ${d.penalties===n?(n===0?'active':'danger active'):''}" onclick="setHoleField('penalties',${n})">${n===3?'3+':n}</button>`).join('')}
+        </div>
+      </div>
+      <div class="field">
+        <label>GREEN IN REGULATION?</label>
+        <div class="choice-row">
+          <button class="choice-btn ${d.gir===true?'active':''}" onclick="setHoleField('gir',true)">YES</button>
+          <button class="choice-btn ${d.gir===false?'active':''}" onclick="setHoleField('gir',false)">NO</button>
+        </div>
+      </div>
+      <div class="conditional ${showUd?'show':''}">
+        <div class="field">
+          <label>UP & DOWN OPPORTUNITY?</label>
+          <div style="font-size:9px;color:var(--text-dim);margin-bottom:7px;line-height:1.5">Were you trying to save par from greenside, or had you already burned shots?</div>
+          <div class="choice-row">
+            <button class="choice-btn ${d.udOpportunity===true?'active':''}" onclick="setHoleField('udOpportunity',true)">U&D CHANCE</button>
+            <button class="choice-btn ${d.udOpportunity===false?'active':''}" onclick="setHoleField('udOpportunity',false)">BURNED SHOTS</button>
+          </div>
+        </div>
+        <div class="conditional ${showUdResult?'show':''}">
+          <div class="field">
+            <label>U&D RESULT</label>
+            <div class="choice-row">
+              <button class="choice-btn ${d.udResult==='converted'?'active':''}" onclick="setHoleField('udResult','converted')">CONVERTED</button>
+              <button class="choice-btn danger ${d.udResult==='failed'?'active':''}" onclick="setHoleField('udResult','failed')">FAILED</button>
+              <button class="choice-btn ${d.udResult==='holed'?'active':''}" onclick="setHoleField('udResult','holed')">CHIP-IN</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>PUTTS</label>
+        <div class="num-pad" style="grid-template-columns:repeat(5,1fr)">
+          ${[0,1,2,3,4].map(n=>`<button class="num-btn ${d.putts===n?'active':''}" onclick="setHoleField('putts',${n})">${n}</button>`).join('')}
+        </div>
+      </div>
+      <button class="btn-save" onclick="saveHole()">► SAVE HOLE</button>
+      <div class="err-msg" id="hole-err"></div>
+    </div>`;
+}
+
+function setHoleField(field,val){
+  playSound('click');
+  holeDraft[field]=val;
+  // Reset dependent fields
+  if(field==='gir'){
+    if(val===true){holeDraft.udOpportunity=null;holeDraft.udResult=null;}
+  }
+  if(field==='udOpportunity'){
+    if(val===false)holeDraft.udResult=null;
+  }
+  renderHoleEntry();
+}
+
+function saveHole(){
+  const d=holeDraft;
+  const errs=[];
+  if(d.score===null)errs.push('SCORE');
+  if(d.tee===null)errs.push('TEE');
+  if(d.gir===null)errs.push('GIR');
+  if(d.putts===null)errs.push('PUTTS');
+  if(d.gir===false&&d.udOpportunity===null)errs.push('U&D OPP');
+  if(d.udOpportunity===true&&d.udResult===null)errs.push('U&D RESULT');
+  if(errs.length){
+    playSound('error');
+    document.getElementById('hole-err').textContent='⚠ MISSING: '+errs.join(', ');
+    return;
+  }
+  // Insert or update
+  const idx=activeRound.holes.findIndex(h=>h.number===d.number);
+  if(idx>=0)activeRound.holes[idx]=d;
+  else activeRound.holes.push(d);
+  activeRound.holes.sort((a,b)=>a.number-b.number);
+  saveActiveRound();
+  playSound('save');
+  closeHoleModal();
+  showToast('HOLE '+d.number+' SAVED');
+  renderContent();
+}
+
+/* ===================================================
+   3-4 HOLE WALK
+=================================================== */
+function startWalk(){
+  if(activeWalk){
+    // If a walk is already active, just resume it. Discard is available inside the active view.
+    showToast('RESUMING ACTIVE WALK');
+    openWalkActiveModal();
+    return;
+  }
+  reallyStartWalk();
+}
+
+function reallyStartWalk(){
+  activeWalk={
+    id:uuid(),
+    startedAt:new Date().toISOString(),
+    holes:[],
+    schemaVersion:SCHEMA_VERSION
+  };
+  saveActiveWalk();
+  playSound('save');
+  openWalkActiveModal();
+}
+
+function openWalkActiveModal(){
+  modalGameId='walk';
+  document.getElementById('modal-gtitle').innerHTML='🚶 3-4 HOLE WALK — ACTIVE';
+  document.getElementById('modal').classList.add('open');
+  document.getElementById('stab-rules').style.display='none';
+  document.getElementById('stab-log').style.display='none';
+  document.querySelector('.modal-stabs').style.display='none';
+  renderWalkActiveBody();
+}
+
+function closeWalkModal(){
+  document.getElementById('modal').classList.remove('open');
+  document.getElementById('stab-rules').style.display='';
+  document.getElementById('stab-log').style.display='';
+  document.querySelector('.modal-stabs').style.display='';
+  modalGameId=null;
+}
+
+function renderWalkActiveBody(){
+  if(!activeWalk){closeWalkModal();return;}
+  const w=activeWalk;
+  const holesPlayed=w.holes.length;
+  const nextHole=holesPlayed+1;
+  const live=computeWalkScore(w);
+  const holeRows=w.holes.map(h=>`
+    <div class="hole-row complete">
+      <span class="hole-num">H${h.number}</span>
+      <span class="hole-detail">
+        ${h.tee?(h.tee==='fairway'?'FW+':h.tee==='light'?'LR':'TR'):'-'}
+        · APP ${h.approachReps?.length||0}r
+        · CHIP ${h.chipReps?.length||0}r
+        · PUTT ${h.puttReps?.length||0}r
+        ${h.gir===false&&h.udResult?' · U&D '+(h.udResult==='converted'?'✓':h.udResult==='holed'?'CHIP-IN':'✗'):''}
+      </span>
+      <button class="hole-edit-btn" onclick="editWalkHole(${h.number})">EDIT</button>
+    </div>`).join('');
+
+  document.getElementById('modal-body').innerHTML=`
+    <div style="margin-bottom:14px;font-size:11px;color:var(--text-dim);line-height:1.7">
+      Started ${fmtDateShort(w.startedAt)} · ${holesPlayed} hole${holesPlayed===1?'':'s'} logged
+    </div>
+    <div class="oc-totals" style="grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px">
+      <div class="oc-tot"><div class="oc-tot-val" style="color:var(--yellow)">${live.composite!==null?live.composite.toFixed(1)+'%':'--'}</div><div class="oc-tot-lbl">LIVE COMPOSITE</div></div>
+      <div class="oc-tot"><div class="oc-tot-val">${live.score}/100</div><div class="oc-tot-lbl">PROJECTED SCORE</div></div>
+    </div>
+    ${holesPlayed?`<div class="hole-list">${holeRows}</div>`:''}
+    <div class="oc-end-btns" style="margin-bottom:14px">
+      <button class="btn btn-primary" onclick="openWalkHoleEntry(${nextHole})">▶ LOG HOLE ${nextHole}</button>
+      ${holesPlayed?`<button class="btn btn-secondary" onclick="endWalk()">END SESSION</button>`:''}
+      <button class="btn btn-danger" onclick="discardWalk()">DISCARD</button>
+    </div>
+    ${holesPlayed?renderWalkCategorySummary(live):''}
+  `;
+}
+
+function renderWalkCategorySummary(live){
+  const cats=[
+    {key:'tee',label:'TEE SHOT'},
+    {key:'approach',label:'APPROACH'},
+    {key:'chip',label:'CHIP'},
+    {key:'ud',label:'UP & DOWN'},
+    {key:'putt',label:'PUTT'}
+  ];
+  return`<div style="background:var(--bg);border:1px solid var(--dim);padding:11px">
+    <div style="font-family:var(--font-px);font-size:6px;color:var(--text-dim);margin-bottom:9px">CATEGORY BREAKDOWN</div>
+    ${cats.map(c=>{
+      const cd=live.categories[c.key];
+      const status=cd.qualified?cd.pct.toFixed(0)+'% ('+cd.numerator+'/'+cd.denominator+')':'<span style="color:var(--text-dim)">need '+WALK_MIN_REPS[c.key]+'+ ('+cd.denominator+' so far)</span>';
+      return`<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:10px;border-bottom:1px solid rgba(255,255,255,.04)">
+        <span style="font-family:var(--font-px);font-size:6px;color:${cd.qualified?'var(--green)':'var(--text-dim)'}">${c.label}</span>
+        <span style="font-family:var(--font-mono);font-size:10px">${status}</span>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function discardWalk(){
+  promptConfirm('⚠ DISCARD WALK?','All hole entries in this active walk will be lost.',()=>{
+    activeWalk=null;saveActiveWalk();
+    closeWalkModal();
+    playSound('delete');showToast('WALK DISCARDED');renderContent();
+  });
+}
+
+/* WALK HOLE ENTRY */
+function openWalkHoleEntry(num){
+  if(!activeWalk)return;
+  playSound('click');
+  editingWalkHole=num;
+  const existing=activeWalk.holes.find(h=>h.number===num);
+  walkDraft=existing?JSON.parse(JSON.stringify(existing)):{
+    number:num,
+    tee:null,                  // 'fairway'|'light'|'trouble'|'skip'
+    approachReps:[],           // each: {primary:bool, in30:bool}
+    gir:null,                  // bool|null
+    udOpportunity:null,        // bool|null (only if gir===false)
+    udResult:null,             // 'converted'|'failed'|'holed'|null
+    chipReps:[],               // each: {primary:bool, in10ft:bool}
+    puttReps:[]                // each: {primary:bool, holed:bool, fromInside6ft:bool}
+  };
+  // Reuse the hole modal
+  document.getElementById('hole-modal-ttl').innerHTML=`🚶 WALK HOLE ${num}`;
+  document.getElementById('hole-modal').classList.add('open');
+  renderWalkHoleEntry();
+}
+
+function editWalkHole(num){openWalkHoleEntry(num)}
+
+function closeWalkHoleModal(){
+  document.getElementById('hole-modal').classList.remove('open');
+  editingWalkHole=null;walkDraft=null;
+  // Refresh walk active view
+  if(activeWalk)renderWalkActiveBody();
+}
+
+function renderWalkHoleEntry(){
+  const d=walkDraft;
+  const showUd=d.gir===false;
+  const showUdResult=d.udOpportunity===true;
+
+  const approachBtns=d.approachReps.map((r,i)=>`
+    <div style="display:flex;gap:6px;align-items:center;padding:7px;background:var(--bg2);border:1px solid var(--dim);margin-bottom:5px;flex-wrap:wrap">
+      <span style="font-family:var(--font-px);font-size:6px;color:${r.primary?'var(--green)':'var(--blue)'};width:60px;flex-shrink:0">${r.primary?'PRIMARY':'BONUS '+i}</span>
+      <button class="choice-btn ${r.in30?'active':''}" style="flex:1;min-width:80px" onclick="toggleWalkRep('approachReps',${i},'in30')">${r.in30?'✓ INSIDE 30FT':'INSIDE 30FT?'}</button>
+      ${!r.primary?`<button class="hole-edit-btn" onclick="removeWalkRep('approachReps',${i})">✕</button>`:''}
+    </div>`).join('');
+
+  const chipBtns=d.chipReps.map((r,i)=>`
+    <div style="display:flex;gap:6px;align-items:center;padding:7px;background:var(--bg2);border:1px solid var(--dim);margin-bottom:5px;flex-wrap:wrap">
+      <span style="font-family:var(--font-px);font-size:6px;color:${r.primary?'var(--green)':'var(--blue)'};width:60px;flex-shrink:0">${r.primary?'PRIMARY':'BONUS '+i}</span>
+      <button class="choice-btn ${r.in10ft?'active':''}" style="flex:1;min-width:80px" onclick="toggleWalkRep('chipReps',${i},'in10ft')">${r.in10ft?'✓ INSIDE 10FT':'INSIDE 10FT?'}</button>
+      ${!r.primary?`<button class="hole-edit-btn" onclick="removeWalkRep('chipReps',${i})">✕</button>`:''}
+    </div>`).join('');
+
+  const puttBtns=d.puttReps.map((r,i)=>`
+    <div style="display:flex;gap:6px;align-items:center;padding:7px;background:var(--bg2);border:1px solid var(--dim);margin-bottom:5px;flex-wrap:wrap">
+      <span style="font-family:var(--font-px);font-size:6px;color:${r.primary?'var(--green)':'var(--blue)'};width:60px;flex-shrink:0">${r.primary?'PRIMARY':'BONUS '+i}</span>
+      <button class="choice-btn ${r.fromInside6ft?'active':''}" style="flex:1;min-width:70px" onclick="toggleWalkRep('puttReps',${i},'fromInside6ft')">${r.fromInside6ft?'✓ <6FT':'<6FT?'}</button>
+      <button class="choice-btn ${r.holed?'active':''}" style="flex:1;min-width:70px" onclick="toggleWalkRep('puttReps',${i},'holed')">${r.holed?'✓ HOLED':'HOLED?'}</button>
+      ${!r.primary?`<button class="hole-edit-btn" onclick="removeWalkRep('puttReps',${i})">✕</button>`:''}
+    </div>`).join('');
+
+  document.getElementById('hole-modal-body').innerHTML=`
+    <div class="hole-entry">
+      <div style="font-size:10px;color:var(--text-dim);margin-bottom:14px;line-height:1.6">
+        Log first ball as PRIMARY. Bonus reps build practice volume — they don't count toward On Course saves.
+      </div>
+
+      <div class="field">
+        <label>TEE SHOT (FIRST BALL)</label>
+        <div class="choice-row">
+          <button class="choice-btn ${d.tee==='fairway'?'active':''}" onclick="setWalkField('tee','fairway')">FAIRWAY+</button>
+          <button class="choice-btn warn ${d.tee==='light'?'active':''}" onclick="setWalkField('tee','light')">LIGHT ROUGH</button>
+          <button class="choice-btn danger ${d.tee==='trouble'?'active':''}" onclick="setWalkField('tee','trouble')">TROUBLE</button>
+          <button class="choice-btn ${d.tee==='skip'?'active':''}" onclick="setWalkField('tee','skip')">SKIPPED</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>APPROACH REPS (${d.approachReps.length})</label>
+        ${approachBtns||'<div style="font-size:10px;color:var(--text-dim);padding:4px 0">No reps yet</div>'}
+        <div style="display:flex;gap:6px;margin-top:6px">
+          ${!d.approachReps.some(r=>r.primary)?`<button class="btn btn-primary" style="flex:1" onclick="addWalkRep('approachReps',true)">+ PRIMARY APPROACH</button>`:''}
+          <button class="btn btn-blue" style="flex:1" onclick="addWalkRep('approachReps',false)">+ BONUS REP</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>GREEN IN REGULATION? (FIRST BALL)</label>
+        <div class="choice-row">
+          <button class="choice-btn ${d.gir===true?'active':''}" onclick="setWalkField('gir',true)">YES</button>
+          <button class="choice-btn ${d.gir===false?'active':''}" onclick="setWalkField('gir',false)">NO</button>
+        </div>
+      </div>
+
+      <div class="conditional ${showUd?'show':''}">
+        <div class="field">
+          <label>UP & DOWN OPPORTUNITY?</label>
+          <div class="choice-row">
+            <button class="choice-btn ${d.udOpportunity===true?'active':''}" onclick="setWalkField('udOpportunity',true)">U&D CHANCE</button>
+            <button class="choice-btn ${d.udOpportunity===false?'active':''}" onclick="setWalkField('udOpportunity',false)">BURNED SHOTS</button>
+          </div>
+        </div>
+        <div class="conditional ${showUdResult?'show':''}">
+          <div class="field">
+            <label>U&D RESULT (FIRST BALL)</label>
+            <div class="choice-row">
+              <button class="choice-btn ${d.udResult==='converted'?'active':''}" onclick="setWalkField('udResult','converted')">CONVERTED</button>
+              <button class="choice-btn danger ${d.udResult==='failed'?'active':''}" onclick="setWalkField('udResult','failed')">FAILED</button>
+              <button class="choice-btn ${d.udResult==='holed'?'active':''}" onclick="setWalkField('udResult','holed')">CHIP-IN</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>CHIP REPS (${d.chipReps.length})</label>
+        ${chipBtns||'<div style="font-size:10px;color:var(--text-dim);padding:4px 0">No reps yet</div>'}
+        <div style="display:flex;gap:6px;margin-top:6px">
+          ${!d.chipReps.some(r=>r.primary)?`<button class="btn btn-primary" style="flex:1" onclick="addWalkRep('chipReps',true)">+ PRIMARY CHIP</button>`:''}
+          <button class="btn btn-blue" style="flex:1" onclick="addWalkRep('chipReps',false)">+ BONUS REP</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>PUTT REPS (${d.puttReps.length})</label>
+        ${puttBtns||'<div style="font-size:10px;color:var(--text-dim);padding:4px 0">No reps yet</div>'}
+        <div style="display:flex;gap:6px;margin-top:6px">
+          ${!d.puttReps.some(r=>r.primary)?`<button class="btn btn-primary" style="flex:1" onclick="addWalkRep('puttReps',true)">+ PRIMARY PUTT</button>`:''}
+          <button class="btn btn-blue" style="flex:1" onclick="addWalkRep('puttReps',false)">+ BONUS REP</button>
+        </div>
+      </div>
+
+      <button class="btn-save" onclick="saveWalkHole()">► COMPLETE HOLE</button>
+      <div class="err-msg" id="hole-err"></div>
+    </div>`;
+}
+
+function setWalkField(field,val){
+  playSound('click');
+  walkDraft[field]=val;
+  if(field==='gir'&&val===true){walkDraft.udOpportunity=null;walkDraft.udResult=null;}
+  if(field==='udOpportunity'&&val===false)walkDraft.udResult=null;
+  renderWalkHoleEntry();
+}
+
+function addWalkRep(field,primary){
+  playSound('click');
+  // Only one primary per category
+  if(primary&&walkDraft[field].some(r=>r.primary))return;
+  const rep={primary};
+  if(field==='approachReps')rep.in30=false;
+  if(field==='chipReps')rep.in10ft=false;
+  if(field==='puttReps'){rep.holed=false;rep.fromInside6ft=false;}
+  walkDraft[field].push(rep);
+  renderWalkHoleEntry();
+}
+
+function removeWalkRep(field,idx){
+  playSound('click');
+  walkDraft[field].splice(idx,1);
+  renderWalkHoleEntry();
+}
+
+function toggleWalkRep(field,idx,prop){
+  playSound('click');
+  walkDraft[field][idx][prop]=!walkDraft[field][idx][prop];
+  renderWalkHoleEntry();
+}
+
+function saveWalkHole(){
+  const d=walkDraft;
+  // Required: tee shot logged (or skipped) for hole to count complete
+  if(d.tee===null){
+    playSound('error');
+    document.getElementById('hole-err').textContent='⚠ LOG TEE SHOT (or SKIPPED)';
+    return;
+  }
+  if(d.gir===null){
+    playSound('error');
+    document.getElementById('hole-err').textContent='⚠ LOG GIR Y/N';
+    return;
+  }
+  if(d.gir===false&&d.udOpportunity===null){
+    playSound('error');
+    document.getElementById('hole-err').textContent='⚠ LOG U&D OPPORTUNITY';
+    return;
+  }
+  if(d.udOpportunity===true&&d.udResult===null){
+    playSound('error');
+    document.getElementById('hole-err').textContent='⚠ LOG U&D RESULT';
+    return;
+  }
+  // Insert/update
+  const idx=activeWalk.holes.findIndex(h=>h.number===d.number);
+  if(idx>=0)activeWalk.holes[idx]=d;
+  else activeWalk.holes.push(d);
+  activeWalk.holes.sort((a,b)=>a.number-b.number);
+  saveActiveWalk();
+  playSound('save');
+  closeWalkHoleModal();
+  showToast('HOLE '+d.number+' COMPLETE');
+}
+
+/* WALK SCORING */
+function computeWalkScore(w){
+  // Tee shot: % fairway+ or light rough out of holes with non-skip tee
+  const teeAttempts=w.holes.filter(h=>h.tee&&h.tee!=='skip').length;
+  const teeHits=w.holes.filter(h=>h.tee==='fairway'||h.tee==='light').length;
+  // Approach: across all reps (primary + bonus), % in 30ft
+  let appReps=0,appHits=0;
+  w.holes.forEach(h=>{(h.approachReps||[]).forEach(r=>{appReps++;if(r.in30)appHits++;});});
+  // Chip
+  let chipReps=0,chipHits=0;
+  w.holes.forEach(h=>{(h.chipReps||[]).forEach(r=>{chipReps++;if(r.in10ft)chipHits++;});});
+  // Putt: only count primary putts inside 6ft, % holed
+  let puttDenom=0,puttHits=0;
+  w.holes.forEach(h=>{(h.puttReps||[]).forEach(r=>{if(r.primary&&r.fromInside6ft){puttDenom++;if(r.holed)puttHits++;}});});
+  // U&D: only when gir===false && udOpportunity===true
+  let udDenom=0,udHits=0;
+  w.holes.forEach(h=>{
+    if(h.gir===false&&h.udOpportunity===true){
+      udDenom++;
+      if(h.udResult==='converted'||h.udResult==='holed')udHits++;
+    }
+  });
+
+  const cats={
+    tee:{numerator:teeHits,denominator:teeAttempts,minReps:WALK_MIN_REPS.tee},
+    approach:{numerator:appHits,denominator:appReps,minReps:WALK_MIN_REPS.approach},
+    chip:{numerator:chipHits,denominator:chipReps,minReps:WALK_MIN_REPS.chip},
+    ud:{numerator:udHits,denominator:udDenom,minReps:WALK_MIN_REPS.ud},
+    putt:{numerator:puttHits,denominator:puttDenom,minReps:WALK_MIN_REPS.putt}
+  };
+  Object.keys(cats).forEach(k=>{
+    const c=cats[k];
+    c.qualified=c.denominator>=c.minReps;
+    c.pct=c.denominator?c.numerator/c.denominator*100:0;
+  });
+
+  // Composite: reweight across qualifying categories
+  let weightSum=0,weightedPct=0;
+  Object.keys(cats).forEach(k=>{
+    if(cats[k].qualified){
+      weightSum+=WALK_WEIGHTS[k];
+      weightedPct+=cats[k].pct*WALK_WEIGHTS[k];
+    }
+  });
+  const composite=weightSum>0?weightedPct/weightSum:null;
+  const score=composite!==null?Math.round(composite):0;
+  return{categories:cats,composite,score};
+}
+
+function endWalk(){
+  if(!activeWalk||!activeWalk.holes.length)return;
+  const live=computeWalkScore(activeWalk);
+  if(live.composite===null){
+    pendingWalkLive=live;
+    promptConfirm('⚠ NO QUALIFIED CATEGORIES','None of the categories met sample size thresholds. Save anyway with score 0?',()=>{
+      finalizeWalk(false);
+    });
+    return;
+  }
+  // Show save-to-on-course prompt
+  showWalkEndPrompt(live);
+}
+
+function showWalkEndPrompt(live){
+  pendingWalkLive=live;
+  document.getElementById('modal-body').innerHTML=`
+    <div style="margin-bottom:18px">
+      <div style="font-family:var(--font-px);font-size:9px;color:var(--green);margin-bottom:8px">▶ WALK COMPLETE</div>
+      <div style="font-size:11px;color:var(--text-dim);line-height:1.6">${activeWalk.holes.length} hole${activeWalk.holes.length===1?'':'s'} logged · Composite ${live.composite.toFixed(1)}% · Score ${live.score}/100</div>
+    </div>
+    ${renderWalkCategorySummary(live)}
+    <div class="walk-save-prompt" style="margin-top:18px">
+      <div class="walk-save-ttl">💾 SAVE TO ON COURSE LOG?</div>
+      <div class="walk-save-txt">First-ball stats can be saved as a CASUAL WALK in your On Course history. Bonus reps stay only in this practice game record.</div>
+      <div class="walk-save-btns">
+        <button class="btn btn-blue" onclick="finalizeWalk(true)">✓ SAVE AS CASUAL WALK</button>
+        <button class="btn" onclick="finalizeWalk(false)">PRACTICE ONLY</button>
+      </div>
+    </div>`;
+}
+
+function finalizeWalk(saveToOnCourse){
+  const live=pendingWalkLive||computeWalkScore(activeWalk);
+  pendingWalkLive=null;
+  const w=activeWalk;
+  w.endedAt=new Date().toISOString();
+  // Save to practice sessions as gameId 'walk'
+  state.practiceSessions.unshift({
+    id:uuid(),
+    gameId:'walk',
+    score:live.score,
+    date:w.endedAt,
+    notes:'',
+    subStats:{},
+    walkData:{
+      holesPlayed:w.holes.length,
+      composite:live.composite,
+      categories:live.categories,
+      savedToOnCourse:saveToOnCourse,
+      holes:w.holes
+    }
+  });
+  savePractice();
+
+  if(saveToOnCourse){
+    // Build a casual_walk round from primary first-ball stats
+    const round={
+      id:uuid(),
+      sessionType:'casual_walk',
+      course:'',
+      targetHoles:w.holes.length,
+      startedAt:w.startedAt,
+      endedAt:w.endedAt,
+      sourceWalkId:w.id,
+      schemaVersion:SCHEMA_VERSION,
+      holes:w.holes.map(h=>{
+        // Putts count: count primary putts (best estimate of actual putts on hole)
+        const puttCount=(h.puttReps||[]).filter(r=>r.primary).length;
+        return{
+          number:h.number,
+          score:null,         // unknown from walk
+          tee:h.tee==='skip'?null:h.tee,
+          penalties:0,
+          gir:h.gir,
+          udOpportunity:h.udOpportunity,
+          udResult:h.udResult,
+          putts:puttCount
+        };
+      })
+    };
+    state.rounds.unshift(round);
+    saveRounds();
+  }
+
+  activeWalk=null;saveActiveWalk();
+  closeWalkModal();
+  playSound('save');
+  showToast('WALK SAVED — '+live.score+'/100 ('+(live.composite?live.composite.toFixed(1):'0')+'%)');
+  renderContent();
+}
+
+/* ===================================================
+   FOCUSES TAB
+=================================================== */
+function renderFocusesTab(){
+  const insights=computeFocuses();
+  const totalRounds=state.rounds.length;
+  const totalPractice=state.practiceSessions.length;
+
+  if(!totalRounds&&totalPractice<3){
+    return`
+      <div class="foc-hdr">🎯 FOCUSES</div>
+      <div class="foc-sub">Your weakest areas, ranked by impact. Pulls from On Course rounds and practice game scores.</div>
+      <div class="foc-sec">
+        <div class="foc-empty">
+          <div class="foc-empty-ttl">NOT ENOUGH DATA YET</div>
+          Log at least 1 round in <strong style="color:var(--green)">ON COURSE</strong>, or 3+ practice game sessions, to see prioritized weakness analysis.<br><br>
+          <span style="color:var(--text-dim);font-size:10px;font-style:italic">"You can't fix what you haven't measured."</span>
+        </div>
+      </div>`;
+  }
+
+  const priorityHtml=insights.priorities.length
+    ? insights.priorities.map((p,i)=>`
+      <div class="foc-priority lvl-${p.level}">
+        <div class="foc-rank">#${i+1}</div>
+        <div class="foc-content">
+          <div class="foc-area">${p.area}</div>
+          <div class="foc-metric">${p.metric}</div>
+          <div class="foc-rec">→ ${p.recommendation}</div>
+        </div>
+      </div>`).join('')
+    : `<div class="foc-priority lvl-good">
+        <div class="foc-rank">✓</div>
+        <div class="foc-content">
+          <div class="foc-area">NO MAJOR WEAKNESSES DETECTED</div>
+          <div class="foc-metric">Your stats are above warning thresholds across all measured categories.</div>
+          <div class="foc-rec">→ Maintain practice cadence. Re-evaluate after the next 3-5 rounds.</div>
+        </div>
+      </div>`;
+
+  return`
+    <div class="foc-hdr">🎯 FOCUSES</div>
+    <div class="foc-sub">Your weakest areas, ranked by impact. Pulled from ${totalRounds} round${totalRounds===1?'':'s'} and ${totalPractice} practice session${totalPractice===1?'':'s'}.</div>
+    <div class="foc-sec">
+      <div class="foc-sec-ttl">📉 PRIORITIZED WEAKNESSES</div>
+      ${priorityHtml}
+    </div>
+    ${insights.context?`<div class="foc-sec">
+      <div class="foc-sec-ttl">📊 RECENT CONTEXT</div>
+      ${insights.context}
+    </div>`:''}
+  `;
+}
+
+function computeFocuses(){
+  const priorities=[];
+  let context='';
+
+  // ROUND-BASED METRICS (last 5 rounds)
+  const recentRounds=state.rounds.slice(0,5);
+  if(recentRounds.length){
+    let totalHoles=0,totalPen=0,totalPutts=0,trouble=0,fwHits=0,girHits=0,girAttempts=0,udAttempts=0,udMade=0,threePutts=0;
+    recentRounds.forEach(r=>{
+      r.holes.forEach(h=>{
+        totalHoles++;
+        totalPen+=h.penalties||0;
+        totalPutts+=h.putts||0;
+        if(h.tee==='trouble')trouble++;
+        if(h.tee==='fairway'||h.tee==='light')fwHits++;
+        if(h.gir===true){girHits++;girAttempts++;}
+        else if(h.gir===false){girAttempts++;}
+        if(h.udOpportunity===true){
+          udAttempts++;
+          if(h.udResult==='converted'||h.udResult==='holed')udMade++;
+        }
+        if((h.putts||0)>=3)threePutts++;
+      });
+    });
+
+    const troubleRate=totalHoles?(trouble/totalHoles*100):0;
+    const fwPct=totalHoles?(fwHits/totalHoles*100):0;
+    const udPct=udAttempts?(udMade/udAttempts*100):null;
+    const threePuttRate=totalHoles?(threePutts/totalHoles*100):0;
+    const penPerRound=recentRounds.length?(totalPen/recentRounds.length):0;
+
+    context=`
+      <div style="font-size:10px;line-height:2;color:var(--text-dim)">
+        Last ${recentRounds.length} round${recentRounds.length===1?'':'s'} · ${totalHoles} holes
+        <br>FW+: <strong style="color:var(--text)">${fwPct.toFixed(0)}%</strong>
+        · Trouble: <strong style="color:var(--text)">${troubleRate.toFixed(0)}%</strong>
+        · 3-Putts: <strong style="color:var(--text)">${threePuttRate.toFixed(0)}%</strong>
+        ${udPct!==null?` · U&D: <strong style="color:var(--text)">${udPct.toFixed(0)}%</strong>`:''}
+        · Pen/round: <strong style="color:var(--text)">${penPerRound.toFixed(1)}</strong>
+      </div>`;
+
+    // Build candidates from on-course data
+    if(troubleRate>=20)priorities.push({
+      level:troubleRate>=30?1:2,
+      score:troubleRate*1.5,  // weighted by impact severity
+      area:'TEE SHOT — TROUBLE OFF TEE',
+      metric:`<strong>${troubleRate.toFixed(0)}%</strong> of tee shots in trouble (${trouble}/${totalHoles}). Each trouble tee shot averages 1.5+ stroke penalty.`,
+      recommendation:'Add 3x FAIRWAY FINDER per week. Trouble rate above 20% is your single biggest stroke-bleeder.'
+    });
+    if(udPct!==null&&udPct<40)priorities.push({
+      level:udPct<25?1:2,
+      score:(50-udPct)*1.4,
+      area:'SHORT GAME — UP & DOWN CONVERSION',
+      metric:`<strong>${udPct.toFixed(0)}%</strong> U&D rate (${udMade}/${udAttempts}). Tour average ~55%; amateur target 40%+.`,
+      recommendation:'Add 2x UP & DONE per week. Focus on chip leave distance — getting inside 5 ft makes the putt automatic.'
+    });
+    if(threePuttRate>=15)priorities.push({
+      level:threePuttRate>=25?1:2,
+      score:threePuttRate*1.2,
+      area:'PUTTING — 3-PUTT CONTROL',
+      metric:`<strong>${threePuttRate.toFixed(0)}%</strong> 3-putt rate (${threePutts}/${totalHoles}). Above 15% is usually a lag-distance issue.`,
+      recommendation:'Add 2x 3-RANGE PUTTING per week. Emphasize the long-putt sub-stat (25-35 ft).'
+    });
+    if(penPerRound>=1.5)priorities.push({
+      level:penPerRound>=2.5?1:2,
+      score:penPerRound*15,
+      area:'PENALTIES PER ROUND',
+      metric:`<strong>${penPerRound.toFixed(1)}</strong> penalties/round avg (${totalPen} total). Each penalty is a guaranteed stroke lost.`,
+      recommendation:'Course management focus. On Fairway Finder, prioritize OB-avoidance over distance. Consider club-down strategy.'
+    });
+    if(fwPct<45&&totalHoles>=9)priorities.push({
+      level:fwPct<30?1:2,
+      score:(60-fwPct)*1.0,
+      area:'TEE SHOT — FAIRWAY+ ACCURACY',
+      metric:`<strong>${fwPct.toFixed(0)}%</strong> fairway+ (${fwHits}/${totalHoles}). Below 45% suggests directional control issues.`,
+      recommendation:'Add 2x FAIRWAY FINDER per week. Track miss patterns — if consistently one side, tee strategy can compensate.'
+    });
+    if(girAttempts>=9){
+      const girPct=girHits/girAttempts*100;
+      if(girPct<25)priorities.push({
+        level:girPct<15?1:2,
+        score:(40-girPct)*0.9,
+        area:'APPROACH — GIR RATE',
+        metric:`<strong>${girPct.toFixed(0)}%</strong> GIR (${girHits}/${girAttempts}). Amateur target 25-35%.`,
+        recommendation:'Add 2x DEAD YARDAGE + 1x STRIKE LAB. Approach proximity is the hidden lever for scoring.'
+      });
+    }
+  }
+
+  // PRACTICE-GAME-BASED METRICS
+  GAME_IDS.forEach(gid=>{
+    const ap=getAvgPct(gid);
+    if(ap===null)return;
+    const last5=getLastN(gid,5);
+    if(last5.length<3)return;  // need volume for signal
+    const g=GAMES[gid];
+    const workPct=(g.benchmarks.work/g.max)*100;
+    const solidPct=(g.benchmarks.solid/g.max)*100;
+    if(ap<workPct){
+      priorities.push({
+        level:1,
+        score:(workPct-ap)*1.2+30,  // boost since avg below WORK is severe
+        area:`PRACTICE — ${g.name}`,
+        metric:`<strong>${ap.toFixed(0)}%</strong> last-5 avg, below WORK threshold (${workPct.toFixed(0)}%).`,
+        recommendation:`This game is your weakest practice signal. Increase frequency and review fundamentals before iterating on score.`
+      });
+    }else if(ap<solidPct){
+      priorities.push({
+        level:2,
+        score:(solidPct-ap)*0.8,
+        area:`PRACTICE — ${g.name}`,
+        metric:`<strong>${ap.toFixed(0)}%</strong> last-5 avg in OK band (target SOLID: ${solidPct.toFixed(0)}%).`,
+        recommendation:`Bridge to SOLID threshold. Add 1 extra session/week and track sub-stat trends.`
+      });
+    }
+  });
+
+  // Sort by impact score (descending) and dedupe-ish (one per area type)
+  priorities.sort((a,b)=>b.score-a.score);
+  // Cap at 5
+  return{priorities:priorities.slice(0,5),context};
+}
+
+/* ===================================================
+   DATA MANAGEMENT
+=================================================== */
+function openDataModal(){
+  playSound('click');
+  document.getElementById('data-modal').classList.add('open');
+  renderDataModalBody();
+}
+function closeDataModal(){
+  document.getElementById('data-modal').classList.remove('open');
+}
+function renderDataModalBody(){
+  const lastBackup=state.lastBackup?fmtDate(state.lastBackup):'never';
+  const since=state.lastBackup?daysSince(state.lastBackup):null;
+  const totalP=state.practiceSessions.length,totalR=state.rounds.length;
+  document.getElementById('data-modal-body').innerHTML=`
+    <div class="dm-sec">
+      <div class="dm-sec-ttl">📤 EXPORT BACKUP</div>
+      <div class="dm-sec-desc">Downloads a single JSON file with all your practice sessions, rounds, and active sessions. Save this to iCloud / Google Drive for cross-device backup.</div>
+      <div class="dm-btns">
+        <button class="btn btn-primary" onclick="exportData()">▶ EXPORT ALL DATA</button>
+      </div>
+      <div class="dm-status">
+        Last export: <strong>${lastBackup}</strong>${since!==null?' ('+since+' days ago)':''}<br>
+        Currently logged: <strong>${totalP}</strong> practice · <strong>${totalR}</strong> rounds
+      </div>
+    </div>
+    <div class="dm-sec">
+      <div class="dm-sec-ttl">📥 IMPORT BACKUP</div>
+      <div class="dm-sec-desc">Restore from a previously exported JSON file. Choose merge (combine with current data) or replace (wipe and restore from file).</div>
+      <div class="dm-btns">
+        <button class="btn btn-secondary" onclick="triggerImport('merge')">▶ IMPORT (MERGE)</button>
+        <button class="btn btn-danger" onclick="triggerImport('replace')">▶ IMPORT (REPLACE)</button>
+      </div>
+    </div>
+    <div class="dm-sec">
+      <div class="dm-sec-ttl">⚠ NUCLEAR OPTION</div>
+      <div class="dm-sec-desc">Delete ALL data — practice sessions, rounds, active sessions. Cannot be undone. Export first if you might want it back.</div>
+      <div class="dm-btns">
+        <button class="btn btn-danger" onclick="wipeAllData()">▶ WIPE ALL DATA</button>
+      </div>
+    </div>
+    <div class="dm-sec">
+      <div class="dm-sec-ttl">ℹ SCHEMA INFO</div>
+      <div class="dm-sec-desc">Schema version: <strong style="color:var(--yellow)">${SCHEMA_VERSION}</strong>. Future app versions will auto-migrate older exports on import.</div>
+    </div>`;
+}
+
+function exportData(){
+  const payload={
+    schema_version:SCHEMA_VERSION,
+    exported_at:new Date().toISOString(),
+    fairway_lab_v3:{
+      practice_sessions:state.practiceSessions
+    },
+    fairway_lab_rounds_v1:{
+      rounds:state.rounds
+    },
+    active:{
+      round:activeRound,
+      walk:activeWalk
+    },
+    meta:{
+      lastBackup:state.lastBackup
+    }
+  };
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const stamp=new Date().toISOString().slice(0,10);
+  const a=document.createElement('a');
+  a.href=url;a.download=`fairway-lab-backup-${stamp}.json`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  state.lastBackup=new Date().toISOString();
+  state.bannerDismissedAt=totalLoggedSessions();
+  saveMeta();
+  playSound('save');
+  showToast('BACKUP EXPORTED');
+  renderDataModalBody();renderBackupBanner();
+}
+
+let importMode='merge';
+function triggerImport(mode){
+  importMode=mode;
+  document.getElementById('import-input').click();
+}
+
+function handleImportFile(evt){
+  const file=evt.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      processImport(data);
+    }catch(err){
+      playSound('error');
+      showToast('INVALID FILE');
+    }
+  };
+  reader.readAsText(file);
+  evt.target.value='';
+}
+
+function processImport(data){
+  if(!data||typeof data!=='object'){playSound('error');showToast('INVALID FORMAT');return;}
+  const incomingPractice=data.fairway_lab_v3?.practice_sessions||[];
+  const incomingRounds=data.fairway_lab_rounds_v1?.rounds||[];
+  const action=importMode;
+  const msg=action==='replace'
+    ?`Replace all data with ${incomingPractice.length} practice sessions and ${incomingRounds.length} rounds from file?`
+    :`Merge ${incomingPractice.length} practice sessions and ${incomingRounds.length} rounds into your current data? (duplicates by id will be skipped)`;
+  promptConfirm('💾 IMPORT DATA',msg,()=>{
+    if(action==='replace'){
+      state.practiceSessions=incomingPractice;
+      state.rounds=incomingRounds;
+    }else{
+      const existingPIds=new Set(state.practiceSessions.map(s=>s.id));
+      const existingRIds=new Set(state.rounds.map(r=>r.id));
+      incomingPractice.forEach(s=>{if(!existingPIds.has(s.id))state.practiceSessions.push(s);});
+      incomingRounds.forEach(r=>{if(!existingRIds.has(r.id))state.rounds.push(r);});
+      // Sort newest first
+      state.practiceSessions.sort((a,b)=>new Date(b.date)-new Date(a.date));
+      state.rounds.sort((a,b)=>new Date(b.endedAt||b.startedAt)-new Date(a.endedAt||a.startedAt));
+    }
+    savePractice();saveRounds();
+    playSound('save');showToast(action==='replace'?'DATA REPLACED':'DATA MERGED');
+    renderDataModalBody();renderContent();
+  });
+}
+
+function wipeAllData(){
+  promptConfirm('☠ WIPE ALL DATA?','This will permanently delete ALL practice sessions, rounds, and active sessions. THIS CANNOT BE UNDONE.<br><br>Export a backup first if you want to be able to restore.',()=>{
+    state.practiceSessions=[];
+    state.rounds=[];
+    activeRound=null;activeWalk=null;
+    state.lastBackup=null;state.bannerDismissedAt=0;
+    savePractice();saveRounds();saveMeta();saveActiveRound();saveActiveWalk();
+    playSound('delete');showToast('ALL DATA WIPED');
+    closeDataModal();renderContent();
+  });
+}
+
+/* ===================================================
+   INIT
+=================================================== */
+loadData();
+renderContent();
+
+document.getElementById('modal').addEventListener('click',function(e){if(e.target===this){
+  if(activeWalk&&modalGameId==='walk')closeWalkModal();
+  else closeModal();
+}});
+document.getElementById('hole-modal').addEventListener('click',function(e){
+  if(e.target===this){
+    if(activeWalk&&editingWalkHole!==null)closeWalkHoleModal();
+    else closeHoleModal();
+  }
+});
+document.getElementById('data-modal').addEventListener('click',function(e){if(e.target===this)closeDataModal()});
+document.getElementById('confirm-modal').addEventListener('click',function(e){if(e.target===this)closeConfirm()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){
+  closeModal();closeHoleModal();closeWalkHoleModal();closeDataModal();closeConfirm();
+}});
+</script>
+</body>
+</html>
